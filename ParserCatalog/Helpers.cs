@@ -22,6 +22,11 @@ namespace ParserCatalog
 {
     public static class Helpers
     {
+        private static string ReplaceWhiteSpace(string text)
+        {
+            var res = string.Join("_", text.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)).Replace("_", " ");
+            return res;
+        }
         public static void GetCatalog(ref List<ShopBig> shopBigs)
         {
             foreach (var shopBig in shopBigs)
@@ -38,8 +43,8 @@ namespace ParserCatalog
                         if (!string.IsNullOrEmpty(cat.InnerText))
                         {
                             var url = cat.Attributes["href"].Value;
-                            if (string.IsNullOrEmpty(shopBig.Host))
-                                shopBig.Host = url;
+                            if (shopBig.Host==null||string.IsNullOrEmpty(shopBig.Host))
+                                shopBig.Host = shopBig.Url;
                             if(url.Contains(shopBig.Host))
                                 temp.Add(new Category() {Name = cat.InnerText, Url = url});
                             else
@@ -761,7 +766,7 @@ namespace ParserCatalog
             return cook;
         }
 
-        public static void SaveToFile(List<Product> pr, string path)
+        public static void SaveToFile(List<Product> pr, string path, bool photo=false)
         {
             var hash = new HashSet<string>(pr.Select(x => x.Url));
             var cL = new List<Product>();
@@ -783,7 +788,7 @@ namespace ParserCatalog
             {
                 cL = pr;
             }
-            SaveExcel2007<Product>(cL, path, "Каталог", cL.Max(x => x.Photos.Count));
+            SaveExcel2007<Product>(cL, path, "Каталог", cL.Max(x => x.Photos.Count),photo);
         }
 
         public static void SaveToFile(List<Sport> pr, string path)
@@ -816,7 +821,7 @@ namespace ParserCatalog
             SaveExcel2007<Ozkan>(pr, path, "Каталог", pr.Max(x => x.Photos.Count));
         }
 
-        public static void SaveExcel2007<T>(IEnumerable<T> list, string path, string nameBook, int countPhoto)
+        public static void SaveExcel2007<T>(IEnumerable<T> list, string path, string nameBook, int countPhoto, bool photo=false)
         {
             if (list == null || !list.Any()) return;
             Type itemType = typeof(T);
@@ -836,13 +841,16 @@ namespace ParserCatalog
                         for (int i = 0; i <= countPhoto; i++)
                             dt.Columns.Add(prop.Name + i);
                     }
-                    //else if (prop.Name.Equals("Photo"))
-                    //{
-                    //    DataColumn column = new DataColumn("Photo"); //Create the column.
-                    //    column.DataType = System.Type.GetType("System.Byte[]"); //Type byte[] to store image bytes.
-                    //    column.AllowDBNull = true;
-                    //    dt.Columns.Add(column);
-                    //}
+                    else if (prop.Name.Equals("Photo"))
+                    {
+                        if (photo)
+                        {
+                            DataColumn column = new DataColumn("Photo"); //Create the column.
+                            //column.DataType = System.Type.GetType("System.Byte[]"); //Type byte[] to store image bytes.
+                            //column.AllowDBNull = true;
+                            dt.Columns.Add(column);
+                        }
+                    }
                     else
                     {
                         dt.Columns.Add(prop.Name);
@@ -857,6 +865,11 @@ namespace ParserCatalog
                 //newRow["CompanyID"] = "NewCompanyID";
                 foreach (var prop in props)
                 {
+                    if(!photo)
+                    {
+                        if (prop.Name.Equals("Photo"))
+                            continue;
+                    }
                     var val = prop.GetValue(x);
                     if (val == null)
                         newRow[prop.Name] = "";
@@ -886,10 +899,14 @@ namespace ParserCatalog
                     }
                     //else if (prop.Name.Equals("Photo"))
                     //{
-                    //    var img = val as System.Drawing.Image;
-                    //    MemoryStream ms = new MemoryStream();
-                    //    img.Save(ms,img.RawFormat);
-                    //    newRow[prop.Name] = ms.ToArray();
+                    //    if (photo)
+                    //    {
+                    //        newRow[prop.Name] = val.ToString();
+                    //    }
+                        //var img = val as System.Drawing.Image;
+                        //MemoryStream ms = new MemoryStream();
+                        //img.Save(ms, img.RawFormat);
+                        //newRow[prop.Name] = ms.ToArray();
                     //}
                     else
                     {
@@ -969,8 +986,8 @@ namespace ParserCatalog
                         }
                         else if (dc.ColumnName.Equals("Photo"))
                         {
-                            ws.Row(rowIndex).Height = 131;
-                            ws.Column(colIndex).Width = 30;
+                            ws.Row(rowIndex).Height = 71;
+                            ws.Column(colIndex).Width = 18;
                             //add picture to cell
                             //BinaryFormatter bf = new BinaryFormatter();
                             //Stream ms = new MemoryStream();
@@ -988,9 +1005,11 @@ namespace ParserCatalog
                                     pic.From.ColumnOff = 9525; //ExcelHelper.Pixel2MTU(1);
                                     pic.From.RowOff = 9525; // ExcelHelper.Pixel2MTU(1);
                                     //set picture size to fit inside the cell
-                                    pic.SetSize(150, 150);
+                                    pic.SetSize(70, 70);
                                 }
-                            }catch(Exception ex){}
+                            }catch(Exception ex){
+                                ws.Row(rowIndex).Height = 12;
+                            }
                         }
                         else
                         {
