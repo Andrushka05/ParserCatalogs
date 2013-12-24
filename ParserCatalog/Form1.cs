@@ -93,6 +93,7 @@ namespace ParserCatalog
             Start.Enabled = false;
             Start.Text = "Подождите...";
             var pars = new List<Site>();
+            var leggi = new List<string>();
             foreach (TreeNode aNode in treeView1.Nodes)
             {
                 var t1 = new List<Category>();
@@ -241,7 +242,9 @@ namespace ParserCatalog
                     else if (shopUrl.Contains("ozkan"))
                         GetOzkan(cL);
                     else if (shopUrl.Contains("leggi"))
-                        GetLeggi(cL.Select(x => x.Url));
+                    {
+                        leggi=cL.Select(x => x.Url).ToList();
+                    }
                     else if (shopUrl.Contains("trikobakh"))
                         GetTrikobakh(cL);
                     else if (shopUrl.Contains("trimedwedya"))
@@ -314,11 +317,18 @@ namespace ParserCatalog
                     errors.Add(site.Name+" - Ошибка: "+ex.Message);
                 }
             });
+            timeStripStatus.Text = "Время парсинга " + st.Elapsed;
+            countStripStatus.Text = "Загружено " + (pars.Count - errors.Count-1) + " из "+pars.Count;
+            
+            if (leggi.Any())
+            {
+                GetLeggi(leggi);
+            }
             st.Stop();
             stL.Add(st.Elapsed.ToString());
             Start.Enabled = true;
             timeStripStatus.Text = "Время парсинга " + st.Elapsed;
-            countStripStatus.Text = "Загружено "+(pars.Count-errors.Count)+" сайтов";
+            countStripStatus.Text = "Загружено " + (pars.Count - errors.Count) + " сайтов";
             if (errors.Count > 0)
             {
                 var ss = "";
@@ -346,7 +356,7 @@ namespace ParserCatalog
             {
                 var prod = Helpers.GetProductLinks2(catalog.Url, cook, "http://www.otoys.ru/",
                     "//div[contains(concat(' ', @class, ' '), ' markTitle ')]/a",
-                    "//div[contains(concat(' ', @class, ' '), ' paging ')]/a[contains(text(), 'Последняя')]", "/page_", null);
+                    "//div[contains(concat(' ', @class, ' '), ' paging ')]/a[contains(text(), 'Последняя')] | //div[contains(concat(' ', @class, ' '), ' paging ')]/a[last()]", "/page_", null);
 
 
                 if (prod.Count == 0)
@@ -371,7 +381,7 @@ namespace ParserCatalog
                     var title = Helpers.GetItemInnerText(doc2, "//h1[contains(concat(' ', @class, ' '), ' mark_header ')]");
                     var artic = Helpers.GetItemInnerText(doc2, "//span[contains(concat(' ', @class, ' '), ' artMarket ')]").Replace("Aртикул:", "").Trim();
                     var price = Helpers.GetItemInnerText(doc2, "//span[contains(concat(' ', @class, ' '), ' goodPrice ')]").Replace("р.", "").Trim();
-                    desc = Helpers.GetItemsInnerText(doc2, "//td[contains(concat(' ', @class, ' '), ' description ')]/p", "", new List<string>() { "Категория" }).Replace("<!-- no autotypograph --><!-- no autoclear -->", "").Replace("Уведомить о поступлении.","").Trim();
+                    desc = Helpers.GetItemsInnerText(doc2, "//td[contains(concat(' ', @class, ' '), ' description ')]/p", "", new List<string>() { "Категория" }).Replace("<!-- no autotypograph --><!-- no autoclear -->", "").Replace("Уведомить о поступлении.", "").Replace("Обращаем Ваше внимание, чтобы забрать товар необходимо оформить заказ и получить подтверждение от оператора.", "").Trim();
                     phs = Helpers.GetPhoto(doc2, "//a[contains(concat(' ', @rel, ' '), 'market_images')]");
                     
                     var tt = doc2.DocumentNode.SelectNodes("//span[contains(concat(' ', @class, ' '), ' categoryLinks ')]");
@@ -811,12 +821,17 @@ namespace ParserCatalog
                     {
                         var arrPrice = Regex.Split(sizePrice, "; ");
                         var arrSize = Regex.Split(size, "; ");
-
+                         var url=res;
                         for (int i = 0; i < arrPrice.Length; i++)
                         {
+                            if (i != 0)
+                            {
+                                title = desc = url = cat = string.Empty;
+                                phs = new List<string>();
+                            }
                             products.Add(new Product()
                             {
-                                Url = res,
+                                Url = url,
                                 Article = artic,
                                 Color = col,
                                 Description = desc,
@@ -3424,7 +3439,19 @@ namespace ParserCatalog
                     doc2.LoadHtml(HttpUtility.HtmlDecode(s));
 
                     var title = doc2.DocumentNode.SelectNodes("//h1[contains(concat(' ', @class, ' '), ' titleName ')]")[0].InnerText;
-                    var desc = doc2.DocumentNode.SelectNodes("//div[contains(concat(' ', @id, ' '), ' tab_description ')]")[0].InnerText.Replace("&nbsp;", "").Trim();
+                    //var desc = doc2.DocumentNode.SelectNodes("//div[contains(concat(' ', @id, ' '), ' tab_description ')]")[0].InnerText.Replace("&nbsp;", "").Trim();
+                    //if (desc.Length > 0)
+                    //{
+                    //    if (desc.Contains("<!--"))
+                    //    {
+                    //        desc = desc.Substring(desc.IndexOf("<!--"), desc.LastIndexOf("-->") + 3 - desc.IndexOf("<!--")).Trim();
+                    //    }
+                    //}
+                    var desc = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @id, ' '), ' tab_description ')]/p", "", new List<string>() { "if", "регистрации" });
+                    if (desc.Length == 0)
+                    {
+                        desc = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @id, ' '), ' tab_description ')]/div/p", "", new List<string>() { "if", "регистрации" });
+                    }
                     var price = doc2.DocumentNode.SelectNodes("//div[contains(concat(' ', @class, ' '), ' centerColumn')]/div/table/tr/td/table/tr[1]/td[2]")[0].InnerText.Replace("р.", "").Replace(",", "").Replace(".", ",").Trim();
                     var artic = doc2.DocumentNode.SelectNodes("//div[contains(concat(' ', @class, ' '), ' centerColumn')]/div/table/tr/td/table/tr[3]/td[2]")[0].InnerText.Trim();
                     string size = "", col = "";
@@ -3437,12 +3464,12 @@ namespace ParserCatalog
                             var n = cc.Substring(0, cc.IndexOf("<")).Trim();
                             if (n.Contains("Размер"))
                             {
-                                size = c.InnerText.Replace("  ", "").Replace("\r\n", ";").Trim();
+                                size = c.InnerText.Replace("  ", "").Replace("\r\n", "; ").Trim();
                                 size = size.Substring(1, size.Length - 2);
                             }
                             else if (n.Contains("Цвет"))
                             {
-                                col = c.InnerText.Replace("  ", "").Replace("\r\n", ";").Trim();
+                                col = c.InnerText.Replace("  ", "").Replace("\r\n", "; ").Trim();
                                 col = col.Substring(1, col.Length - 2);
                             }
                         }
@@ -3493,7 +3520,7 @@ namespace ParserCatalog
             var cook = Helpers.GetCookiePost("http://www.ozkanwear.com/", new NameValueCollection());
             foreach (var catalog in list)
             {
-                var prod = Helpers.GetProductLinks(catalog.Url, cook, "http://www.ozkanwear.com/catalog/", "//div[contains(concat(' ', @class, ' '), ' model ')]/p/a",
+                var prod = Helpers.GetProductLinks(catalog.Url, cook, "http://www.ozkanwear.com/catalog/", "//div[contains(concat(' ', @class, ' '), ' model ')]/a",
                     "//div[contains(concat(' ', @id, ' '), ' pages_down ')]/p/a", null);
                 foreach (var res in prod)
                 {
@@ -3738,54 +3765,54 @@ namespace ParserCatalog
             //countStripStatus.Text = "Скачено " + (numb + 1) + " " + end;
         }
 
-        private void button1_Click(object sender, EventArgs e)
-        {
-            treeView1.Nodes.Clear();
-            int i = 0;
-            button1.Enabled = false;
-            Start.Enabled = false;
-            button1.Text = "Идёт проверка сайтов...";
-            foreach (var big in shopBigs)
-            {
-                try
-                {
-                    var client = new WebClient();
-                    var data = client.OpenRead(big.Url);
-                    treeView1.Nodes.Add(big.Name);
-                }
-                catch (Exception ex)
-                {
-                    var node = new TreeNode(big.Name) { ForeColor = Color.Red, ToolTipText = "Сервер недоступен" };
-                    treeView1.Nodes.Add(node);
-                }
-                foreach (var cat in big.CatalogList)
-                {
-                    treeView1.Nodes[i].Nodes.Add(cat.Name);
-                }
-                i++;
-            }
+        //private void button1_Click(object sender, EventArgs e)
+        //{
+        //    treeView1.Nodes.Clear();
+        //    int i = 0;
+        //    button1.Enabled = false;
+        //    Start.Enabled = false;
+        //    button1.Text = "Идёт проверка сайтов...";
+        //    foreach (var big in shopBigs)
+        //    {
+        //        try
+        //        {
+        //            var client = new WebClient();
+        //            var data = client.OpenRead(big.Url);
+        //            treeView1.Nodes.Add(big.Name);
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            var node = new TreeNode(big.Name) { ForeColor = Color.Red, ToolTipText = "Сервер недоступен" };
+        //            treeView1.Nodes.Add(node);
+        //        }
+        //        foreach (var cat in big.CatalogList)
+        //        {
+        //            treeView1.Nodes[i].Nodes.Add(cat.Name);
+        //        }
+        //        i++;
+        //    }
 
-            foreach (var sh in shops)
-            {
-                try
-                {
-                    var client = new WebClient();
-                    var data = client.OpenRead(sh.Url);
-                    treeView1.Nodes.Add(sh.Name);
-                    //checkedListBox1.Items.Add(sh.Name, CheckState.Unchecked);
-                }
-                catch (Exception ex)
-                {
-                    var node = new TreeNode(sh.Name) { ForeColor = Color.Red, ToolTipText = "Сервер недоступен" };
-                    treeView1.Nodes.Add(node);
-                    //checkedListBox1.Items.Add(sh.Name, CheckState.Indeterminate);
-                }
-                //Unchecked); //CheckState.Checked);
-            }
-            button1.Enabled = true;
-            Start.Enabled = true;
-            button1.Text = "Проверить сайты на доступность";
-        }
+        //    foreach (var sh in shops)
+        //    {
+        //        try
+        //        {
+        //            var client = new WebClient();
+        //            var data = client.OpenRead(sh.Url);
+        //            treeView1.Nodes.Add(sh.Name);
+        //            //checkedListBox1.Items.Add(sh.Name, CheckState.Unchecked);
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            var node = new TreeNode(sh.Name) { ForeColor = Color.Red, ToolTipText = "Сервер недоступен" };
+        //            treeView1.Nodes.Add(node);
+        //            //checkedListBox1.Items.Add(sh.Name, CheckState.Indeterminate);
+        //        }
+        //        //Unchecked); //CheckState.Checked);
+        //    }
+        //    button1.Enabled = true;
+        //    Start.Enabled = true;
+        //    button1.Text = "Проверить сайты на доступность";
+        //}
 
     }
 }

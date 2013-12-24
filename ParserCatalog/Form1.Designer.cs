@@ -38,7 +38,6 @@
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.timeStripStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.countStripStatus = new System.Windows.Forms.ToolStripStatusLabel();
-            this.button1 = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -54,7 +53,7 @@
             // Start
             // 
             this.Start.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.Start.Location = new System.Drawing.Point(74, 249);
+            this.Start.Location = new System.Drawing.Point(25, 174);
             this.Start.Name = "Start";
             this.Start.Size = new System.Drawing.Size(142, 37);
             this.Start.TabIndex = 8;
@@ -102,7 +101,7 @@
             // photoCheck
             // 
             this.photoCheck.AutoSize = true;
-            this.photoCheck.Location = new System.Drawing.Point(28, 157);
+            this.photoCheck.Location = new System.Drawing.Point(28, 114);
             this.photoCheck.Name = "photoCheck";
             this.photoCheck.Size = new System.Drawing.Size(144, 17);
             this.photoCheck.TabIndex = 12;
@@ -130,22 +129,11 @@
             this.countStripStatus.Name = "countStripStatus";
             this.countStripStatus.Size = new System.Drawing.Size(0, 17);
             // 
-            // button1
-            // 
-            this.button1.Location = new System.Drawing.Point(28, 112);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(253, 23);
-            this.button1.TabIndex = 14;
-            this.button1.Text = "Проверить сайты на доступность";
-            this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.button1_Click);
-            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(601, 324);
-            this.Controls.Add(this.button1);
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.photoCheck);
             this.Controls.Add(this.treeView1);
@@ -176,7 +164,6 @@
         private System.Windows.Forms.StatusStrip statusStrip1;
         private System.Windows.Forms.ToolStripStatusLabel timeStripStatus;
         private System.Windows.Forms.ToolStripStatusLabel countStripStatus;
-        private System.Windows.Forms.Button button1;
     }
 }
 
