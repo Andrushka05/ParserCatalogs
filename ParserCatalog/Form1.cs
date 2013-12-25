@@ -32,6 +32,7 @@ namespace ParserCatalog
             shops = new List<Shop>();
             shopBigs = new List<ShopBig>();
             treeView1.Nodes.Clear();
+            path.Text = Environment.CurrentDirectory;
             shops.Add(new Shop() { Name = "Leggi", Url = "http://leggi.com.ua/" });
             shops.Add(new Shop() { Name = "Trikobach", Url = "http://trikobakh.com" });
             shops.Add(new Shop() { Name = "Твоё", Url = "http://tvoe.ru/collection/" });
@@ -774,8 +775,11 @@ namespace ParserCatalog
             var products = new List<Product>();
             var cook = Helpers.GetCookiePost("http://noski-a42.ru/", new NameValueCollection());
             var folder = path.Text + @"\" + "Noski";
-            if (!Directory.Exists(folder))
-                Directory.CreateDirectory(folder);
+            if (photoCheck.Checked)
+            {
+                if (!Directory.Exists(folder))
+                    Directory.CreateDirectory(folder);
+            }
             foreach (var catalog in list)
             {
                 var prod = Helpers.GetProductLinks(catalog.Url + "?page=all", cook, "http://noski-a42.ru/", "//div[contains(concat(' ', @class, ' '), ' product_info ')]/h3/a", null);
@@ -822,11 +826,11 @@ namespace ParserCatalog
                         var arrPrice = Regex.Split(sizePrice, "; ");
                         var arrSize = Regex.Split(size, "; ");
                          var url=res;
-                        for (int i = 0; i < arrPrice.Length; i++)
+                        for (int i = 0; i < arrPrice.Count(); i++)
                         {
                             if (i != 0)
                             {
-                                title = desc = url = cat = string.Empty;
+                                title = desc = url = cat =photo= string.Empty;
                                 phs = new List<string>();
                             }
                             products.Add(new Product()
@@ -868,7 +872,7 @@ namespace ParserCatalog
 
             }
 
-            Helpers.SaveToFile(products, path.Text + @"\Noski.xlsx",photoCheck.Checked);
+            Helpers.SaveToFile(products, path.Text + @"\Noski.xlsx",photoCheck.Checked,false);
             StatusStrip("Noski");
             
         }

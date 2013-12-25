@@ -767,11 +767,12 @@ namespace ParserCatalog
             return cook;
         }
 
-        public static void SaveToFile(List<Product> pr, string path, bool photo=false)
+        public static void SaveToFile(List<Product> pr, string path, bool photo=false, bool sort=true)
         {
             var hash = new HashSet<string>(pr.Select(x => x.Url));
             var cL = new List<Product>();
-            if (hash.Count != pr.Count)
+            
+            if (hash.Count != pr.Count &&sort)
             {
                 foreach (var t in hash)
                 {
