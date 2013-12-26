@@ -23,6 +23,7 @@ namespace ParserCatalog
 {
     public static class Helpers
     {
+        //"$(SolutionDir)\ILMerge\merge_all.bat" "$(SolutionDir)" "$(TargetPath)" $(ConfigurationName)
         private static string ReplaceWhiteSpace(string text)
         {
             var res = string.Join("_", text.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)).Replace("_", " ");
@@ -792,12 +793,12 @@ namespace ParserCatalog
             }
             SaveExcel2007<Product>(cL, path, "Каталог", cL.Max(x => x.Photos.Count),photo);
         }
-
-        public static void SaveToFile(List<Sport> pr, string path)
+        public static void SaveToFile<T>(List<T> pr, string path, bool photo = false, bool sort = true) where T: Product
         {
             var hash = new HashSet<string>(pr.Select(x => x.Url));
-            var cL = new List<Sport>();
-            if (hash.Count != pr.Count)
+            var cL = new List<T>();
+
+            if (hash.Count != pr.Count && sort)
             {
                 foreach (var t in hash)
                 {
@@ -815,10 +816,34 @@ namespace ParserCatalog
             {
                 cL = pr;
             }
-            SaveExcel2007<Sport>(cL, path, "Каталог", cL.Max(x => x.Photos.Count));
+            SaveExcel2007<T>(cL, path, "Каталог", cL.Max(x => x.Photos.Count), photo);
         }
+        //public static void SaveToFile(List<Sport> pr, string path)
+        //{
+        //    var hash = new HashSet<string>(pr.Select(x => x.Url));
+        //    var cL = new List<Sport>();
+        //    if (hash.Count != pr.Count)
+        //    {
+        //        foreach (var t in hash)
+        //        {
+        //            foreach (var g in pr)
+        //            {
+        //                if (t.Contains(g.Url))
+        //                {
+        //                    cL.Add(g);
+        //                    break;
+        //                }
+        //            }
+        //        }
+        //    }
+        //    else
+        //    {
+        //        cL = pr;
+        //    }
+        //    SaveExcel2007<Sport>(cL, path, "Каталог", cL.Max(x => x.Photos.Count));
+        //}
 
-        public static void SaveToFile(List<Ozkan> pr, string path)
+        public static void SaveToFileOz(List<Ozkan> pr, string path)
         {
             SaveExcel2007<Ozkan>(pr, path, "Каталог", pr.Max(x => x.Photos.Count));
         }
