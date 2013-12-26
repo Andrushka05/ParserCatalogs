@@ -219,7 +219,7 @@ namespace ParserCatalog
                         }
                         var temp = new HashSet<string>(catList.Select(x => x.Url));
 
-                        if (temp.Count != catList.Count)
+                        if (temp.Count != catList.Count && !shopUrl.Contains("lavira"))
                         {
                             foreach (var t in temp)
                             {
@@ -373,11 +373,7 @@ namespace ParserCatalog
                     var doc2 = Helpers.GetHtmlDocument(res, catalog.Url, null, cook);
                     if (doc2 == null)
                         continue;
-                    var col = "";
-                    var size = "";
-                    var desc = "";
-                    var cat = "";
-                    var phs = new List<string>();
+                    var cat = Helpers.GetEncodingCategory(catalog.Name);
                     var items = doc2.DocumentNode.SelectNodes("//table[contains(concat(' ', @class, ' '), ' product ')]");
                     if (items != null)
                     {
@@ -385,36 +381,62 @@ namespace ParserCatalog
                         {
                             var doc = new HtmlAgilityPack.HtmlDocument();
                             doc.LoadHtml(HttpUtility.HtmlDecode(item.InnerHtml));
-
-                        }
+                            var content = Helpers.GetItemsInnerHtml(doc, "//div[contains(concat(' ', @class, ' '), ' description ')]/p","",null,";;");
+                            var phs = Helpers.GetPhoto(doc, "//a[contains(concat(' ', @class, ' '), 'highslide')]");
+                            if (content.Length > 0)
+                            {
+                                var cont = Regex.Split(content.Replace("<strong>", "").Replace("</strong>", ""), ";;");
+                                foreach (var c in cont)
+                                {
+                                    var br = Regex.Split(c, "<br>");
+                                    var price = "";
+                                    var title = br[0];
+                                    br[0] = string.Empty;
+                                    if (!br[1].Contains("размеры") && !br[1].Contains("цвет") && br[1].Contains("\""))
+                                    {
+                                        title += " " + br[1];
+                                        br[1] = string.Empty;
+                                    }
+                                    var artic = title;
+                                    var size = "";
+                                    var desc = "";
+                                    var col = "";
+                                    foreach (var b in br)
+                                    {
+                                        if (b.ToLower().Contains("размеры"))
+                                            size = b.ToLower().Replace("размеры:", "").Trim();
+                                        else if (b.ToLower().Contains("цена"))
+                                            price = b.ToLower().Replace("цена:", "").Replace("р.", "").Replace("р", "").Trim();
+                                        else if (b.ToLower().Contains("цвет"))
+                                            col = b.ToLower().Replace("цвет:", "").Trim();
+                                        else if (!string.IsNullOrEmpty(b))
+                                            desc += b.Trim();
+                                    }
+                                    
+                                    products.Add(new Product()
+                                    {
+                                        Url = res,
+                                        Article = artic,
+                                        Color = col,
+                                        Description = desc,
+                                        Name = title,
+                                        Price = price,
+                                        CategoryPath = cat,
+                                        Size = size,
+                                        Photos = phs,
+                                    });
+                                }
+                            }
+                         }
                     }
-                    var title = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @id, ' '), ' content ')]/h1");
-                    var artic = title;
-                    var price = Helpers.GetItemInnerText(doc2, "//span[contains(concat(' ', @class, ' '), ' uc-price ')]").Replace("р", "").Replace("p", "").Trim();
-                    desc = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), ' product-body ')]/p", "", new List<string>() { }).Trim();
-                    phs = Helpers.GetPhoto(doc2, "//div[contains(concat(' ', @class, ' '), 'main-product-image')]/a");
-                    size = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @class, ' '), ' field-item odd ')]");
-                    cat = Helpers.GetEncodingCategory(catalog.Name);
-                    col = Helpers.GetItemsInnerText(doc2, "//table[contains(concat(' ', @class, ' '), ' table_product ')]/tbody/tr/td[1]", "", null, "; ").Trim();
-                    products.Add(new Product()
-                    {
-                        Url = res,
-                        Article = artic,
-                        Color = col,
-                        Description = desc,
-                        Name = title,
-                        Price = price,
-                        CategoryPath = cat,
-                        Size = size,
-                        Photos = phs,
-                    });
+                    
                     //countRequest++;
                     //}
                     //catch (Exception ex) { }
                 }
 
             }
-            Helpers.SaveToFile(products, path.Text + @"\Lavira.xlsx");
+            Helpers.SaveToFile(products, path.Text + @"\Lavira.xlsx",false,false);
             StatusStrip("Lavira");
 
         }
