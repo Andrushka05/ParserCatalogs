@@ -859,31 +859,68 @@ namespace ParserCatalog
             if (dt.Rows.Count < 1 && dt.Columns.Count < 1)
             {
                 //Создаём столбцы
-                foreach (var prop in props)
+                
+                var temps=props.ToList();
+                var ph = props.FirstOrDefault(x => x.Name == "Photo");
+                if (ph != null && photo)
                 {
-                    //dt.Columns.Add("Dosage", typeof(int));
-                    //dt.Columns.Add(prop.Name); //, prop.PropertyType);
-                    if (prop.Name == "Photos")
-                    {
-                        for (int i = 0; i <= countPhoto; i++)
-                            dt.Columns.Add(prop.Name + i);
-                    }
-                    else if (prop.Name.Equals("Photo"))
-                    {
-                        if (photo)
-                        {
-                            DataColumn column = new DataColumn("Photo"); //Create the column.
-                            //column.DataType = System.Type.GetType("System.Byte[]"); //Type byte[] to store image bytes.
-                            //column.AllowDBNull = true;
-                            dt.Columns.Add(column);
-                        }
-                    }
-                    else
-                    {
-                        dt.Columns.Add(prop.Name);
-                    }
-
+                    dt.Columns.Add("Photo");
+                    temps.Remove(ph);
                 }
+                dt.Columns.Add("CategoryPath");
+                temps.Remove(props.FirstOrDefault(x=>x.Name=="CategoryPath"));
+                dt.Columns.Add("Name");
+                temps.Remove(props.FirstOrDefault(x=>x.Name=="Name"));
+                dt.Columns.Add("Article");
+                temps.Remove(props.FirstOrDefault(x=>x.Name=="Article"));
+                var price=props.Where(x=>x.Name.Contains("Price"));
+                foreach(var p in price){
+                    dt.Columns.Add(p.Name);
+                    temps.Remove(p);
+                }
+                temps.Remove(props.FirstOrDefault(x=>x.Name=="Description"));
+                temps.Remove(props.FirstOrDefault(x=>x.Name=="Url"));
+                var photos=props.Where(x=>x.Name.Contains("Photos"));
+                temps.Remove(props.FirstOrDefault(x=>x.Name=="Photos"));
+                foreach (var prop in temps)
+                {
+                    if (!prop.Name.Equals("Photo"))
+                        dt.Columns.Add(prop.Name);
+                }
+                
+                dt.Columns.Add("Description");
+                dt.Columns.Add("Url");
+                foreach(var p in photos){
+                    for (int i = 0; i <= countPhoto; i++)
+                            dt.Columns.Add(p.Name + i);
+                }
+                
+                //foreach (var prop in props)
+                //{
+                //    //dt.Columns.Add("Dosage", typeof(int));
+                //    //dt.Columns.Add(prop.Name); //, prop.PropertyType);
+                    
+                //    if (prop.Name == "Photos")
+                //    {
+                //        for (int i = 0; i <= countPhoto; i++)
+                //            dt.Columns.Add(prop.Name + i);
+                //    }
+                //    else if (prop.Name.Equals("Photo"))
+                //    {
+                //        if (photo)
+                //        {
+                //            DataColumn column = new DataColumn("Photo"); //Create the column.
+                //            //column.DataType = System.Type.GetType("System.Byte[]"); //Type byte[] to store image bytes.
+                //            //column.AllowDBNull = true;
+                //            dt.Columns.Add(column);
+                //        }
+                //    }
+                //    else
+                //    {
+                //        dt.Columns.Add(prop.Name);
+                //    }
+                   
+                //}
             }
 
             foreach (var x in list)
