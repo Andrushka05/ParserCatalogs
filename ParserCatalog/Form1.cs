@@ -218,24 +218,35 @@ namespace ParserCatalog
                             }
                         }
                         var temp = new HashSet<string>(catList.Select(x => x.Url));
-
-                        if (temp.Count != catList.Count && !shopUrl.Contains("lavira"))
+                        if (shopUrl.Contains("lavira"))
                         {
-                            foreach (var t in temp)
+                            var rt = temp.ToList();
+                            var tr = new List<string>() {rt[1], rt[2], rt[4], rt[5], rt[6], rt[7]};
+                            foreach (var t in tr)
                             {
-                                foreach (var g in catList)
-                                {
-                                    if (t.Contains(g.Url))
-                                    {
-                                        cL.Add(g);
-                                        break;
-                                    }
-                                }
+                                cL.Add(catList.FirstOrDefault(x=>x.Url==t));
                             }
                         }
                         else
                         {
-                            cL = catList;
+                            if (temp.Count != catList.Count && !shopUrl.Contains("lavira"))
+                            {
+                                foreach (var t in temp)
+                                {
+                                    foreach (var g in catList)
+                                    {
+                                        if (t.Contains(g.Url))
+                                        {
+                                            cL.Add(g);
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                cL = catList;
+                            }
                         }
                     }
                     else
@@ -404,27 +415,95 @@ namespace ParserCatalog
                                     foreach (var b in br)
                                     {
                                         if (b.ToLower().Contains("размеры"))
-                                            size = b.ToLower().Replace("размеры:", "").Trim();
+                                            size = b.ToLower().Replace("размеры", "").Replace(":","").Trim();
                                         else if (b.ToLower().Contains("цена"))
                                             price = b.ToLower().Replace("цена:", "").Replace("р.", "").Replace("р", "").Trim();
                                         else if (b.ToLower().Contains("цвет"))
-                                            col = b.ToLower().Replace("цвет:", "").Trim();
+                                            col = b.ToLower().Replace("цвет", "").Replace(":", "").Trim();
+                                        else if (b.ToLower().Contains("цены"))
+                                        {
+                                            
+                                        }
+                                        else if (b.ToLower().Contains("р") && b.Contains("-"))
+                                        {
+                                            size += b.Substring(0, 5) + "; ";
+                                            price += b.Replace("р", "").Replace(b.Substring(0, 5), "").Replace("р", "").Replace("-", "").Trim() + "; ";
+                                        }
+                                        else if (b.Contains("-"))
+                                        {
+                                            size += b + "; ";
+                                        }
                                         else if (!string.IsNullOrEmpty(b))
                                             desc += b.Trim();
                                     }
-                                    
-                                    products.Add(new Product()
+                                    if (desc.Length == 0 && title.Length > (title.LastIndexOf("\"") + 1))
                                     {
-                                        Url = res,
-                                        Article = artic,
-                                        Color = col,
-                                        Description = desc,
-                                        Name = title,
-                                        Price = price,
-                                        CategoryPath = cat,
-                                        Size = size,
-                                        Photos = phs,
-                                    });
+                                        desc = title.Substring(title.LastIndexOf("\"") + 1).Trim();
+                                        if(desc.Length>0)
+                                            title = artic = title.Replace(desc, "").Trim();
+                                    }
+                                    if (!price.Contains(";"))
+                                    {
+                                        products.Add(new Product()
+                                        {
+                                            Url = res,
+                                            Article = artic,
+                                            Color = col,
+                                            Description = desc,
+                                            Name = title,
+                                            Price = price,
+                                            CategoryPath = cat,
+                                            Size = size,
+                                            Photos = phs,
+                                        });
+                                    }
+                                    else
+                                    {
+                                        var ss = Regex.Split(size, "; ");
+                                        var pp = Regex.Split(price, "; ");
+                                        if (pp.Count() > 2)
+                                        {
+                                            for (int i = 0; i < ss.Count(); i++)
+                                            {
+                                                if (!string.IsNullOrEmpty(ss[i]) && !string.IsNullOrEmpty(pp[i]))
+                                                {
+                                                    products.Add(new Product()
+                                                    {
+                                                        Url = res,
+                                                        Article = artic,
+                                                        Color = col,
+                                                        Description = desc,
+                                                        Name = title,
+                                                        Price = pp[i],
+                                                        CategoryPath = cat,
+                                                        Size = ss[i],
+                                                        Photos = phs,
+                                                    });
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            for (int i = 0; i < ss.Count(); i++)
+                                            {
+                                                if (!string.IsNullOrEmpty(ss[i]) && !string.IsNullOrEmpty(pp[i]))
+                                                {
+                                                    products.Add(new Product()
+                                                    {
+                                                        Url = res,
+                                                        Article = artic,
+                                                        Color = col,
+                                                        Description = desc,
+                                                        Name = title,
+                                                        Price = price,
+                                                        CategoryPath = cat,
+                                                        Size = ss[i],
+                                                        Photos = phs,
+                                                    });
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                          }
@@ -434,8 +513,9 @@ namespace ParserCatalog
                     //}
                     //catch (Exception ex) { }
                 }
-
+                
             }
+
             Helpers.SaveToFile(products, path.Text + @"\Lavira.xlsx",false,false);
             StatusStrip("Lavira");
 
