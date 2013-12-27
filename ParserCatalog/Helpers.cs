@@ -87,23 +87,26 @@ namespace ParserCatalog
         public static List<string> GetPhoto(HtmlAgilityPack.HtmlDocument doc, string xPath1, string xPath2 = "", string host1 = "", string host2 = "", string word = "", string att1 = "href", string att2 = "src")
         {
             var phs = new List<string>();
-            var photos = doc.DocumentNode.SelectNodes(xPath1);
-            if (photos != null)
+            if (!string.IsNullOrEmpty(xPath1))
             {
-                if (!string.IsNullOrEmpty(word))
+                var photos = doc.DocumentNode.SelectNodes(xPath1);
+                if (photos != null)
                 {
-                    foreach (var p in photos)
+                    if (!string.IsNullOrEmpty(word))
                     {
-                        if (p.Attributes[att1].Value.Contains(word))
-                            phs.Add(host1 + p.Attributes[att1].Value);
+                        foreach (var p in photos)
+                        {
+                            if (p.Attributes[att1].Value.Contains(word))
+                                phs.Add(host1 + p.Attributes[att1].Value);
+                        }
                     }
+                    else
+                        phs.AddRange(photos.Select(p => host1 + p.Attributes[att1].Value));
                 }
-                else
-                    phs.AddRange(photos.Select(p => host1 + p.Attributes[att1].Value));
             }
             if (!string.IsNullOrEmpty(xPath2))
             {
-                photos = doc.DocumentNode.SelectNodes(xPath2);
+                var photos = doc.DocumentNode.SelectNodes(xPath2);
                 if (photos != null)
                 {
                     if (!string.IsNullOrEmpty(word))
@@ -478,7 +481,7 @@ namespace ParserCatalog
             var win = Encoding.GetEncoding("windows-1251");
             byte[] winBytes = win.GetBytes(str);
             var cat = Encoding.UTF8.GetString(winBytes, 0, winBytes.Length);
-            return cat;
+            return HttpUtility.HtmlDecode(cat);
         }
         /// <summary>
         /// 
