@@ -787,7 +787,6 @@ namespace ParserCatalog
             catch (Exception ex) { }
             return new HashSet<string>(prLink);
         }
-
         public static string GetLinkOfString(string text)
         {
             var beg = text.IndexOf("http:");
@@ -845,10 +844,19 @@ namespace ParserCatalog
             catch (Exception ex) { }
             return new HashSet<string>(prLink);
         }
-
         public static string GetCookiePost(string link, NameValueCollection col)
         {
             var request = (HttpWebRequest)HttpWebRequest.Create(link);
+            if (link.Contains("wildberries"))
+            {
+                request.Method = "Post";
+                request.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8";
+                request.ContentType = "application/x-www-form-urlencoded";
+                request.UserAgent = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36";
+                WebHeaderCollection myWebHeaderCollection = request.Headers;
+                myWebHeaderCollection.Add("Accept-Language:ru");
+                request.ContentLength = 0;
+            }
             var resp = (HttpWebResponse)request.GetResponse();
             var cooks = resp.Headers.GetValues("Set-Cookie");
             resp.Close();
@@ -881,20 +889,23 @@ namespace ParserCatalog
                     }
                 }
             }
+            //if (col.Count > 0)
+            //{
+                var client2 = new System.Net.WebClient();
+                client2.Headers.Add(HttpRequestHeader.Cookie, cook);
+                client2.Headers.Add(HttpRequestHeader.Accept, "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
+                client2.Headers.Add(HttpRequestHeader.Referer, "https://google.com");
+                client2.Headers.Add(HttpRequestHeader.UserAgent, "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36");
+                client2.Headers.Add(HttpRequestHeader.AcceptLanguage, "ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4");
+                try
+                {
+                    var byt = client2.UploadValues(link, "POST", col);
 
-            var client2 = new System.Net.WebClient();
-            client2.Headers.Add(HttpRequestHeader.Cookie, cook);
-            client2.Headers.Add(HttpRequestHeader.Accept, "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
-            client2.Headers.Add(HttpRequestHeader.Referer, "https://google.com");
-            client2.Headers.Add(HttpRequestHeader.UserAgent, "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36");
-            client2.Headers.Add(HttpRequestHeader.AcceptLanguage, "ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4");
-            try
-            {
-                var byt = client2.UploadValues(link, "POST", col);
-                var reader2 = new StreamReader(new MemoryStream(byt));
-                string s21 = reader2.ReadToEnd();
-            }
-            catch (Exception ex) { }
+                    var reader2 = new StreamReader(new MemoryStream(byt));
+                    string s21 = reader2.ReadToEnd();
+                }
+                catch (Exception ex) { }
+            //}
             return cook;
         }
 

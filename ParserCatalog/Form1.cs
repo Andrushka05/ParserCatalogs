@@ -81,6 +81,9 @@ namespace ParserCatalog
             shops.Add(new Shop() { Name = "Donnasara", Url = "http://donnasara.com.ua" });
             shops.Add(new Shop() { Name = "Lefik", Url = "http://lefik.ru" });
             shops.Add(new Shop() { Name = "Voolya", Url = "http://voolya.com.ua" });
+            shops.Add(new Shop() { Name = "Topopt", Url = "http://www.topopt.ru" });
+            shops.Add(new Shop() { Name = "Besthat", Url = "http://besthat.ru" });
+            //shops.Add(new Shop() { Name = "Colgotki", Url = "http://www.colgotki.com" });
         
             shopBigs.Add(new ShopBig()
             {
@@ -152,8 +155,11 @@ namespace ParserCatalog
                 if (!site.Catalog)
                 {
                     var catList = new List<Category>();
-
-                    var cook = Helpers.GetCookiePost(shopUrl, new NameValueCollection());
+                    var cook = "";
+                    if (shopUrl.Contains("wildberries"))
+                    {
+                        cook = Helpers.GetCookiePost(shopUrl, new NameValueCollection());
+                    }
                     var page = Helpers.GetHtmlDocument(shopUrl, "https://google.com",
                         Encoding.GetEncoding("windows-1251"), cook);
 
@@ -214,6 +220,14 @@ namespace ParserCatalog
                         query = "//ul[contains(concat(' ', @class, ' '), ' b-sidebar-menu__submenu ')]/li/a";
                     else if (shopUrl.Contains("lefik"))
                         query = "//ul[contains(concat(' ', @class, ' '), ' collections-list ')]/li/a | //ul[contains(concat(' ', @class, ' '), ' subcol ')]/li/a";
+                    else if (shopUrl.Contains("topopt"))
+                        query = "//div[contains(concat(' ', @class, ' '), 'newMenu')]/div/a";
+                    else if (shopUrl.Contains("besthat"))
+                        query = "//ul[contains(concat(' ', @class, ' '), 'menu-subcategories')]/li/a";
+                    else if (shopUrl.Contains("colgotki"))
+                        query = "//div[contains(concat(' ', @class, ' '), 'art-BlockContent-body')]/a";
+                    else if (shopUrl.Contains("voolya"))
+                        query = "//div[contains(concat(' ', @class, ' '), 'menu')]/a";
                     
                     var cats = page.DocumentNode.SelectNodes(query);
                     if (shopUrl.Contains("stilgi"))
@@ -234,7 +248,7 @@ namespace ParserCatalog
                                     shopUrl.Contains("opt-ekonom") || shopUrl.Contains("witerra") ||
                                     shopUrl.Contains("ru.gipnozstyle") || shopUrl.Contains("trikotage") ||
                                     shopUrl.Contains("npopt") || shopUrl.Contains("japan-cosmetic") ||
-                                    shopUrl.Contains("liora-shop") || shopUrl.Contains("opttextil") || shopUrl.Contains("donnasara"))
+                                    shopUrl.Contains("liora-shop") || shopUrl.Contains("opttextil") || shopUrl.Contains("donnasara") || shopUrl.Contains("besthat"))
                                     good = true;
                                 if (link.Contains("roomdecor") && (link.Contains("6195") || link.Contains("6159")))
                                     good = false;
@@ -408,7 +422,16 @@ namespace ParserCatalog
                     GetDonnasara(cL);
                 else if (shopUrl.Contains("lefik"))
                     GetLefik(cL);
-                
+                else if (shopUrl.Contains("topopt"))
+                    GetTopopt(cL);
+                else if (shopUrl.Contains("besthat"))
+                    GetBesthat(cL);
+                else if (shopUrl.Contains("colgotki"))
+                    GetColgotki(cL);
+                else if (shopUrl.Contains("voolya"))
+                    GetVoolya(cL);
+
+
                 stL.Add(st.Elapsed.ToString());
                 //}
                 //catch (Exception ex)
@@ -440,6 +463,216 @@ namespace ParserCatalog
             Start.Text = "Начать парсинг";
         }
 
+        private void GetVoolya(IEnumerable<Category> list)
+        {
+            var products = new List<Product>();
+            var cook = Helpers.GetCookiePost("http://voolya.com.ua/", new NameValueCollection());
+
+            foreach (var catalog in list)
+            {
+                var prod = Helpers.GetProductLinks2(catalog.Url, cook, "http://voolya.com.ua",
+                    "//a[contains(concat(' ', @class, ' '), ' over ')]",
+                    "//div[contains(concat(' ', @id, ' '), ' paginationControl ')]/a[last()-1] ", "/0/page/", null);
+
+                if (prod.Count == 0)
+                    continue;
+
+                int countRequest = 0;
+                foreach (var res in prod)
+                {
+                    //try
+                    //{
+                    //if (countRequest % 3 == 0)
+                    //{
+                    //    Thread.Sleep(7000);
+                    //}
+
+                    var doc2 = Helpers.GetHtmlDocument(res, catalog.Url, null, cook);
+                    if (doc2 == null)
+                        continue;
+                    var col = "";
+                    var size = "";
+                    var desc = "";
+                    var cat = "";
+                    var phs = new List<string>();
+                    var title = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @class, ' '), ' title ')]/h1");
+                    var artic = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @class, ' '), ' art ')]").Replace("Арт.", "").Trim();
+                    var price = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @class, ' '), ' price red ')]").Replace("грн. (оптовая цена)", "").Trim();
+                    desc = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), ' description ')]/p", "", null);
+                    if (string.IsNullOrEmpty(artic))
+                        artic = title;
+                    phs = Helpers.GetPhoto(doc2, "//div[contains(concat(' ', @class, ' '), 'otherImages')]/a", "", "http://www.colgotki.com");
+                    size = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), ' size ')]", "", null, "; ").Replace("Размеры:", "").Replace("есть","").Trim();
+                    cat = Helpers.GetEncodingCategory(catalog.Name);
+                    col = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), ' product-text ')]/div/p", "Цвет", null).Replace(":", "").Trim();
+                    if (size.Length == 0)
+                    {
+                        size = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), ' product-text ')]/div/p", "Размер", null).Replace(":", "").Trim();
+                    }
+                    products.Add(new Product()
+                    {
+                        Url = res,
+                        Article = artic,
+                        Color = col,
+                        Description = desc,
+                        Name = title,
+                        Price = price,
+                        CategoryPath = cat,
+                        Size = size,
+                        Photos = phs,
+                    });
+                    countRequest++;
+                    //}
+                    //catch (Exception ex) { }
+                }
+
+            }
+            Helpers.SaveToFile(products, path.Text + @"\Voolya.xlsx");
+            StatusStrip("Voolya");
+        }
+        private void GetColgotki(IEnumerable<Category> list)
+        {
+            var products = new List<Product>();
+            var cook = Helpers.GetCookiePost("http://www.colgotki.com/", new NameValueCollection());
+
+            foreach (var catalog in list)
+            {
+                var prod = Helpers.GetProductLinks2(catalog.Url, cook, "http://www.colgotki.com",
+                    "//a[contains(concat(' ', @class, ' '), ' product-title ')]",
+                    "//a[contains(concat(' ', @class, ' '), ' pagenav ')][text()='В конец »»'] ", "?page=", null);
+
+                if (prod.Count == 0)
+                    continue;
+
+                int countRequest = 0;
+                foreach (var res in prod)
+                {
+                    //try
+                    //{
+                    if (countRequest % 3 == 0)
+                    {
+                        Thread.Sleep(7000);
+                    }
+
+                    var doc2 = Helpers.GetHtmlDocument(res, catalog.Url, null, cook);
+                    if (doc2 == null)
+                        continue;
+                    var col = "";
+                    var size = "";
+                    var desc = "";
+                    var cat = "";
+                    var phs = new List<string>();
+                    var title = Helpers.GetItemInnerText(doc2, "//h1[contains(concat(' ', @class, ' '), ' product-title ')]");
+                    var artic = title;
+                    var price = Helpers.GetItemInnerText(doc2, "//p[contains(concat(' ', @id, ' '), ' old-field ')]").Replace("руб.", "").Trim();
+                    desc = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), ' product-text ')]/div/p", "", new List<string>() { "Размер", "Цвет" });
+                    if (string.IsNullOrEmpty(artic))
+                        artic = title;
+                    phs = Helpers.GetPhoto(doc2, "//a[contains(concat(' ', @rel, ' '), 'zoom-id')]");
+                    size = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), ' variant-size-radio ')]", "", null, "; ");
+                    cat = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), ' breadcrumb_main ')]/a", "", new List<string>() { "Главная" }, "/");
+                    col = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), ' product-text ')]/div/p", "Цвет", null).Replace(":", "").Trim();
+                    if (size.Length == 0)
+                    {
+                        size = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), ' product-text ')]/div/p", "Размер", null).Replace(":", "").Trim();
+                    }
+                    products.Add(new Product()
+                    {
+                        Url = res,
+                        Article = artic,
+                        Color = col,
+                        Description = desc,
+                        Name = title,
+                        Price = price,
+                        CategoryPath = cat,
+                        Size = size,
+                        Photos = phs,
+                    });
+                    countRequest++;
+                    //}
+                    //catch (Exception ex) { }
+                }
+
+            }
+            Helpers.SaveToFile(products, path.Text + @"\Colgotki.xlsx");
+            StatusStrip("Colgotki");
+        }
+        private void GetBesthat(IEnumerable<Category> list)
+        {
+            var products = new List<Product>();
+            var cook = Helpers.GetCookiePost("http://besthat.ru/", new NameValueCollection());
+
+            foreach (var catalog in list)
+            {
+                var prod = Helpers.GetProductLinks2(catalog.Url, cook, "http://besthat.ru",
+                    "//a[contains(concat(' ', @class, ' '), ' product-title ')]",
+                    "//div[contains(concat(' ', @class, ' '), ' pagination ')]/a[last()]", "page-", null);
+
+                if (prod.Count == 0)
+                    continue;
+
+                int countRequest = 0;
+                foreach (var res in prod)
+                {
+                    //try
+                    //{
+                    if (countRequest % 6 == 0)
+                    {
+                        Thread.Sleep(7000);
+                    }
+
+                    var doc2 = Helpers.GetHtmlDocument(res, catalog.Url, null, cook);
+                    if (doc2 == null)
+                        continue;
+                    var col = "";
+                    var size = "";
+                    var desc = "";
+                    var cat = "";
+                    var phs = new List<string>();
+                    var title = Helpers.GetItemInnerText(doc2, "//h1[contains(concat(' ', @class, ' '), ' mainbox-title ')]");
+                    var artic = title;
+                    if (artic.Contains("арт."))
+                    {
+                        artic = artic.Substring(artic.IndexOf("арт") + 4).Trim();
+                    }
+                    var price = Helpers.GetItemInnerText(doc2, "//span[contains(concat(' ', @class, ' '), ' price ')]/span").Replace("руб", "").Replace(",", "").Trim();
+                    desc = Helpers.GetTextReplaceTags(doc2, "//div[contains(concat(' ', @id, ' '), ' content_block_description ')]", null);
+                    if (string.IsNullOrEmpty(artic))
+                        artic = title;
+                    phs = Helpers.GetPhoto(doc2, "//div[contains(concat(' ', @class, ' '), 'image-border')]/a/img[contains(concat(' ', @id, ' '), 'det_img')]", "//img[contains(concat(' ', @class, ' '), 'object-image')] ", "http://besthat.ru", "http://besthat.ru", "", "src");
+                    var content = Helpers.GetTextReplaceTags(doc2, "//div[contains(concat(' ', @class, ' '), ' product-list-field ')]", null);
+                    //size = Helpers.GetTextReplaceTags(doc2, "//select[contains(concat(' ', @name, ' '), 'product_data')]", null);
+                    cat = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), ' breadcrumbs ')]/a", "", new List<string>() { "Главная" }, "/");
+                    if (content.Contains("Цвет"))
+                    {
+                        var begin=content.IndexOf("Цвет");
+                        col = content.Substring(begin, content.LastIndexOf("\r\n", content.IndexOf(":", begin + 9)) - begin).ToLower().Trim().Replace("цвет:", "").Replace("\r\n", "; ");
+                    }
+                    if (phs.Any())
+                    {
+                        phs = phs.Select(x => x.Replace("30/30", "1000").Replace("150", "1000")).ToList();
+                    }
+                    products.Add(new Product()
+                    {
+                        Url = res,
+                        Article = artic,
+                        Color = col,
+                        Description = desc,
+                        Name = title,
+                        Price = price,
+                        CategoryPath = cat,
+                        Size = size,
+                        Photos = phs,
+                    });
+                    countRequest++;
+                    //}
+                    //catch (Exception ex) { }
+                }
+
+            }
+            Helpers.SaveToFile(products, path.Text + @"\Besthat.xlsx");
+            StatusStrip("Besthat");
+        }
         private void GetLefik(IEnumerable<Category> list)
         {
             var products = new List<Product>();
@@ -482,11 +715,21 @@ namespace ParserCatalog
                         artic = title;
                     phs = Helpers.GetPhoto(doc2, "//a[contains(concat(' ', @class, ' '), 'fancybox')]");
                     cat = Helpers.GetEncodingCategory(catalog.Name);
-                    size = Helpers.GetTextReplaceTags(doc2, "//select[contains(concat(' ', @id, ' '), ' variant_id ')]",
-                        null, "", "; ");
+                    size = Helpers.GetTextReplaceTags(doc2, "//div[contains(concat(' ', @class, ' '), ' b-product-properties ')]",
+                        null, "", "; ").Replace("/",",");
                     col = Helpers.GetTextReplaceTags(doc2, "//div[contains(concat(' ', @class, ' '), 'selector-wrapper')]",
                         null, "Цвет", "; ");
+                    var trr = doc2.DocumentNode.SelectNodes("//div[contains(concat(' ', @class, ' '), 'l-content')]/script[last()]");
+                    //option_names
+                    //[{"id":144214,"title":"\u0420\u0430\u0437\u043c\u0435\u0440","position":1},
+                    //{"id":144320,"title":"\u041f\u0440\u043e\u0438\u0437\u0432\u043e\u0434\u0438\u0442\u0435\u043b\u044c","position":3},
+                    //{"id":144321,"title":"\u0426\u0432\u0435\u0442","position":4},
+                    //{"id":145593,"title":"\u0421\u043e\u0441\u0442\u0430\u0432","position":5}]
 
+                    //Размер \u0420\u0430\u0437\u043c\u0435\u0440  144214
+                    //Цвет 
+                    //Ткань \u0422\u043a\u0430\u043d\u044c
+                    //Производитель \u041f\u0440\u043e\u0438\u0437\u0432\u043e\u0434\u0438\u0442\u0435\u043b\u044c  170884 
                     //if (desc.Length > 0)
                     //{
                     //    desc = Helpers.ReplaceWhiteSpace(desc.Replace("\n", " ").Replace("\t", " ")).Replace(";;", "\r\n");
@@ -512,7 +755,73 @@ namespace ParserCatalog
             Helpers.SaveToFile(products, path.Text + @"\Lefik.xlsx");
             StatusStrip("Lefik");
         }
+        private void GetTopopt(IEnumerable<Category> list)
+        {
+            var products = new List<Product>();
+            var cook = "";//Helpers.GetCookiePost("http://www.topopt.ru/", new NameValueCollection());
 
+            foreach (var catalog in list)
+            {
+                var prod = Helpers.GetProductLinks2(catalog.Url, cook, "http://www.topopt.ru",
+                    "//a[contains(concat(' ', @class, ' '), ' product-title ')]",
+                    "//a[contains(concat(' ', @class, ' '), ' pagenav ')][text()='В конец »»'] ", "?page=", null);
+
+                if (prod.Count == 0)
+                    continue;
+
+                int countRequest = 0;
+                foreach (var res in prod)
+                {
+                    //try
+                    //{
+                    if (countRequest % 3 == 0)
+                    {
+                        Thread.Sleep(7000);
+                    }
+
+                    var doc2 = Helpers.GetHtmlDocument(res, catalog.Url, null, cook);
+                    if (doc2 == null)
+                        continue;
+                    var col = "";
+                    var size = "";
+                    var desc = "";
+                    var cat = "";
+                    var phs = new List<string>();
+                    var title = Helpers.GetItemInnerText(doc2, "//h1[contains(concat(' ', @class, ' '), ' product-title ')]");
+                    var artic = title;
+                    var price = Helpers.GetItemInnerText(doc2, "//p[contains(concat(' ', @id, ' '), ' old-field ')]").Replace("руб.", "").Trim();
+                    desc = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), ' product-text ')]/div/p", "", new List<string>() {"Размер","Цвет" });
+                    if (string.IsNullOrEmpty(artic))
+                        artic = title;
+                    phs = Helpers.GetPhoto(doc2, "//a[contains(concat(' ', @rel, ' '), 'zoom-id')]");
+                    size = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), ' variant-size-radio ')]", "", null, "; ");
+                    cat = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), ' breadcrumb_main ')]/a", "", new List<string>() { "Главная"}, "/");
+                    col = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), ' product-text ')]/div/p", "Цвет", null).Replace(":","").Trim();
+                    if (size.Length == 0)
+                    {
+                        size = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), ' product-text ')]/div/p", "Размер", null).Replace(":", "").Trim();
+                    }
+                    products.Add(new Product()
+                    {
+                        Url = res,
+                        Article = artic,
+                        Color = col,
+                        Description = desc,
+                        Name = title,
+                        Price = price,
+                        CategoryPath = cat,
+                        Size = size,
+                        Photos = phs,
+                    });
+                    countRequest++;
+                    //}
+                    //catch (Exception ex) { }
+                }
+
+            }
+            Helpers.SaveToFile(products, path.Text + @"\Topopt.xlsx");
+            StatusStrip("Topopt");
+        }
         private void GetDonnasara(IEnumerable<Category> list)
         {
             var products = new List<Product>();
@@ -532,9 +841,9 @@ namespace ParserCatalog
                 {
                     //try
                     //{
-                    if (countRequest % 8 == 0)
+                    if (countRequest % 3 == 0)
                     {
-                        Thread.Sleep(5000);
+                        Thread.Sleep(7000);
                     }
 
                     var doc2 = Helpers.GetHtmlDocument(res, catalog.Url, null, cook);
@@ -827,9 +1136,9 @@ namespace ParserCatalog
                 {
                     //try
                     //{
-                    if (countRequest % 8 == 0)
+                    if (countRequest % 3 == 0)
                     {
-                        Thread.Sleep(5000);
+                        Thread.Sleep(7000);
                     }
 
                     var doc2 = Helpers.GetHtmlDocument(res, catalog.Url, null, cook);
@@ -868,8 +1177,8 @@ namespace ParserCatalog
                 }
 
             }
-            Helpers.SaveToFile(products, path.Text + @"\Picoletto.xlsx");
-            StatusStrip("Picoletto");
+            Helpers.SaveToFile(products, path.Text + @"\Stefanika.xlsx");
+            StatusStrip("Stefanika");
         }
 
         private void GetPicoletto(IEnumerable<Category> list)
@@ -937,10 +1246,10 @@ namespace ParserCatalog
         private void GetWildberries()
         {
             var products = new List<Product>();
-            var cook = Helpers.GetCookiePost("http://www.wildberries.ru/", new NameValueCollection());
+            var cook = Helpers.GetCookiePost("http://www.wildberries.ru/1.2149.Lucky%20Child?sle=2426 ", new NameValueCollection());
 
             var prod = Helpers.GetProductLinks("http://www.wildberries.ru/1.2149.Lucky%20Child", cook, "",
-                "//a[contains(concat(' ', @class, ' '), ' ref_goods_n_p ')]", "//div[contains(concat(' ', @class, ' '), ' pageToInsert ')]/a", null);
+                "//a[contains(concat(' ', @class, ' '), ' ref_goods_n_p ')]", "//div[contains(concat(' ', @class, ' '), ' pageToInsert ')]/a", null, "http://www.wildberries.ru");
             int countRequest = 0;
 
             foreach (var res in prod)
@@ -1045,9 +1354,9 @@ namespace ParserCatalog
                     if (desc.Length > 0)
                         desc = desc.Trim();
                     if (size.Length > 0)
-                        size = size.Substring(size.IndexOf(":") + 1).Trim();
+                        size = size.Substring(size.LastIndexOf(":") + 1).Replace(".","").Trim();
                     if (col.Length > 0)
-                        col = col.Substring(col.IndexOf(":") + 1).Trim();
+                        col = col.Substring(col.LastIndexOf(":") + 1).Replace(".", "").Trim();
                 }
 
                 phs = Helpers.GetPhoto(doc2, "//a[contains(concat(' ', @rel, ' '), ' gallery-plants ')]", "", "http://live-toys.com");
@@ -1186,7 +1495,10 @@ namespace ParserCatalog
                     phs = Helpers.GetPhoto(doc2, "//a[contains(concat(' ', @class, ' '), 'highslide')]", "//div[contains(concat(' ', @class, ' '), ' anonce ')]/p/img", "http://vsspb.com", "http://vsspb.com/");
 
                     cat = Helpers.GetEncodingCategory(catalog.Name);
-
+                    if (desc.Length == 0)
+                    {
+                        desc = Helpers.GetTextReplaceTags(doc2, "//div[contains(concat(' ', @class, ' '), 'anonce')]", new List<string>() { title });
+                    }
                     products.Add(new Product()
                     {
                         Url = res,
@@ -1260,6 +1572,23 @@ namespace ParserCatalog
                 }
                 cat = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), ' breadcrumbs ')]/a", "", new List<string>() { "Главная" }, "/");
 
+                if (desc.Length > 0)
+                {
+                    var tr = Regex.Split(desc, "<!--<s");
+                    desc = "";
+                    foreach (var t in tr)
+                    {
+                        if (t.IndexOf("-->") > -1)
+                        {
+                            desc += t.Substring(t.IndexOf("-->")+3).Replace("<!--</s>-->", "").Trim()+"\r\n";
+                        }
+                        else
+                        {
+                            desc += t + "\r\n";
+                        }
+                    }
+                    desc = desc.Trim();
+                }
                 products.Add(new Product()
                 {
                     Url = res,
@@ -1323,7 +1652,7 @@ namespace ParserCatalog
                     //        "//div[contains(concat(' ', @class, ' '), ' wsw_cat ')]/p", "",
                     //        new List<string>() {"Арт", "Цена", "руб"});
                     //}
-                    size = Helpers.GetItemsAttributt(doc2, "//select[contains(concat(' ', @class, ' '), ' inputboxattrib ')]/option", "", "value", new List<string>() { "есть" }, "; ").Replace("_", " ").Trim().Replace(" ", "; ");
+                    size = Helpers.GetItemsAttributt(doc2, "//select[contains(concat(' ', @class, ' '), ' inputboxattrib ')]/option", "", "value", new List<string>() { "есть" }, "; ").Replace("_", " ").Trim();
                     if (string.IsNullOrEmpty(artic))
                         artic = title;
                     phs = Helpers.GetPhoto(doc2, "//a[contains(concat(' ', @rel, ' '), 'lightbox')]");
@@ -1461,7 +1790,7 @@ namespace ParserCatalog
                     var phs = new List<string>();
                     var title = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @id, ' '), ' node ')]/h1");
                     var artic = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @id, ' '), ' node ')]/table/tr/td/b").Replace("Артикул:", "").Trim();
-                    var price = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @id, ' '), ' priceonpage ')]").Replace("руб.", "").Trim();
+                    var price = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @id, ' '), ' priceonpage ')]").Replace("руб.", "").Replace(".","").Trim();
                     desc = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), ' product-body ')]", "", null);
                     if (string.IsNullOrEmpty(artic))
                         artic = title;
@@ -1572,21 +1901,21 @@ namespace ParserCatalog
                         {
                             price = s.ToLower().Replace("цена", "").Replace("р.", "").Replace(":", "").Trim();
                         }
-                        else if (s.ToLower().Contains("цвета"))
+                        else if (s.ToLower().Contains("цвет")&&!s.ToLower().Contains("аблица"))
                         {
-                            col += s.ToLower().Replace("цвета:", "").Trim() + ", ";
+                            col += s.ToLower().Replace("цвета:", "").Replace("цвет:", "").Trim() + ", ";
                         }
                         else if (s.ToLower().Contains("размеры"))
                         {
                             size += s.ToLower().Replace("размеры:", "").Replace("размеры", "").Trim() + ", ";
                         }
-                        else if (!string.IsNullOrEmpty(s.Trim()) && !s.Contains("*") && !s.ToLower().Contains("таблица"))
+                        else if (!string.IsNullOrEmpty(s.Trim()) && !s.Contains("*") && !s.ToLower().Contains("аблица") && !s.ToLower().Contains("т."))
                         {
                             desc += s + ". ";
                         }
                     }
                     if (desc.Contains(".."))
-                        desc = desc.Replace("..", ".").Replace("Т. АБЛИЦА ЦВЕТОВ.", "").Trim();
+                        desc = desc.Replace("..", ".").Replace("Т. АБЛИЦА ЦВЕТОВ.", "").Replace("Т.","").Trim();
                     if (col.Length > 0)
                         col = col.Remove(col.Length - 2).Replace("ткань:", "").Replace(",", "; ").Trim();
                     if (size.Length > 0)
