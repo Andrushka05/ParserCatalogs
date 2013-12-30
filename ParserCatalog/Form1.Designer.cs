@@ -53,7 +53,7 @@
             // Start
             // 
             this.Start.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.Start.Location = new System.Drawing.Point(25, 174);
+            this.Start.Location = new System.Drawing.Point(78, 173);
             this.Start.Name = "Start";
             this.Start.Size = new System.Drawing.Size(142, 37);
             this.Start.TabIndex = 8;
@@ -92,9 +92,10 @@
             // treeView1
             // 
             this.treeView1.CheckBoxes = true;
-            this.treeView1.Location = new System.Drawing.Point(291, 12);
+            this.treeView1.Dock = System.Windows.Forms.DockStyle.Right;
+            this.treeView1.Location = new System.Drawing.Point(293, 0);
             this.treeView1.Name = "treeView1";
-            this.treeView1.Size = new System.Drawing.Size(298, 274);
+            this.treeView1.Size = new System.Drawing.Size(374, 324);
             this.treeView1.TabIndex = 11;
             this.treeView1.AfterCheck += new System.Windows.Forms.TreeViewEventHandler(this.node_AfterCheck);
             // 
@@ -115,7 +116,7 @@
             this.countStripStatus});
             this.statusStrip1.Location = new System.Drawing.Point(0, 302);
             this.statusStrip1.Name = "statusStrip1";
-            this.statusStrip1.Size = new System.Drawing.Size(601, 22);
+            this.statusStrip1.Size = new System.Drawing.Size(293, 22);
             this.statusStrip1.TabIndex = 13;
             this.statusStrip1.Text = "statusStrip1";
             // 
@@ -133,7 +134,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(601, 324);
+            this.ClientSize = new System.Drawing.Size(667, 324);
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.photoCheck);
             this.Controls.Add(this.treeView1);

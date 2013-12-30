@@ -12,6 +12,7 @@ using System.Net;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using HtmlAgilityPack;
@@ -24,7 +25,85 @@ namespace ParserCatalog
     public static class Helpers
     {
         //"$(SolutionDir)\ILMerge\merge_all.bat" "$(SolutionDir)" "$(TargetPath)" $(ConfigurationName)
-        private static string ReplaceWhiteSpace(string text)
+        /// <summary>
+        /// Вытаскивает текст без тегов, теги заменяются \r\n
+        /// </summary>
+        /// <param name="html">html код страницы</param>
+        /// <param name="notWord">Список слов которые не должны содержать в тексте</param>
+        /// <param name="word">Слово, которое должно содержаться в строке</param>
+        /// <param name="split">Разделитель строк</param>
+        /// <returns></returns>
+        public static string GetTextReplaceTags(HtmlDocument doc, string xPath, List<string> notWord, string word = "",
+            string split = "\r\n")
+        {
+            var node = doc.DocumentNode.SelectNodes(xPath);
+            if (node != null)
+            {
+                var html = "";
+                foreach (var n in node)
+                {
+                    if (!string.IsNullOrEmpty(n.InnerHtml))
+                        html += n.InnerHtml + " ";
+                }
+                var arrList = new List<string>();
+                if (!string.IsNullOrEmpty(html))
+                {
+                    var ar = Regex.Split(html, "<");
+                    var res = "";
+                    foreach (var s in ar)
+                    {
+                        var str = s.Substring(s.IndexOf(">") + 1).Trim();
+                        if (!string.IsNullOrEmpty(str)&&!arrList.Any(x => x.Equals(str)))
+                        {
+                            if (notWord != null && notWord.Any())
+                            {
+                                var i = notWord.Count(nw => str.Contains(nw));
+                                if (i == 0)
+                                {
+                                    if (string.IsNullOrEmpty(word))
+                                    {
+                                        res += str + split;
+                                        arrList.Add(str);
+                                    }
+                                    else
+                                    {
+                                        if (str.Contains(word))
+                                        {
+                                            res += str + split;
+                                            arrList.Add(str);
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                if (string.IsNullOrEmpty(word))
+                                {
+                                    res += str + split;
+                                    arrList.Add(str);
+                                }
+                                else
+                                {
+                                    if (str.Contains(word))
+                                    {
+                                        res += str + split;
+                                        arrList.Add(str);
+                                    }
+                                }
+                            }
+                        }
+
+                    }
+                    if (res.Length > 0)
+                        res = res.Remove(res.Length - split.Count());
+                    return res;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        public static string ReplaceWhiteSpace(string text)
         {
             var res = string.Join("_", text.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)).Replace("_", " ");
             return res;
@@ -33,8 +112,9 @@ namespace ParserCatalog
         {
             foreach (var shopBig in shopBigs)
             {
-                var html = GetHtmlDocument(shopBig.Url, "https://google.com", null);
-                if(html==null)
+                var cook = GetCookiePost(shopBig.Url, new NameValueCollection());
+                var html = GetHtmlDocument(shopBig.Url, "https://google.com", null,cook);
+                if (html == null)
                     continue;
                 var cats = html.DocumentNode.SelectNodes(shopBig.XPath);
                 if (cats != null)
@@ -45,35 +125,37 @@ namespace ParserCatalog
                         if (!string.IsNullOrEmpty(cat.InnerText))
                         {
                             var url = cat.Attributes["href"].Value;
-                            if (shopBig.Host==null||string.IsNullOrEmpty(shopBig.Host))
+                            if (shopBig.Host == null || string.IsNullOrEmpty(shopBig.Host))
                                 shopBig.Host = shopBig.Url;
-                            if(url.Contains(shopBig.Host))
-                                temp.Add(new Category() {Name = cat.InnerText, Url = url});
+                            if (url.Contains(shopBig.Host))
+                                temp.Add(new Category() { Name = cat.InnerText, Url = url });
                             else
-                                temp.Add(new Category() { Name = cat.InnerText, Url = shopBig.Host+url });
+                                temp.Add(new Category() { Name = cat.InnerText, Url = shopBig.Host + url });
                         }
                     }
                     shopBig.CatalogList = temp;
                 }
             }
-            
+
         }
 
         public static HtmlAgilityPack.HtmlDocument GetHtmlDocument(string url, string refererLink, Encoding encode, string cook = "")
         {
+            var s = "";
             try
             {
+
                 var client = new System.Net.WebClient();
                 client.Headers.Add(HttpRequestHeader.Cookie, cook);
                 client.Headers.Add(HttpRequestHeader.Accept, "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
-                client.Headers.Add(HttpRequestHeader.Referer, refererLink);
+                client.Headers.Add(HttpRequestHeader.Referer, HttpUtility.UrlEncode(refererLink));
                 client.Headers.Add(HttpRequestHeader.UserAgent, "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36");
                 client.Headers.Add(HttpRequestHeader.AcceptLanguage, "ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4");
                 var data = client.OpenRead(url);
                 if (encode == null)
                     encode = Encoding.UTF8;
                 var reader = new StreamReader(data, encode);
-                string s = reader.ReadToEnd();
+                s = reader.ReadToEnd();
                 data.Close();
                 reader.Close();
                 var doc = new HtmlAgilityPack.HtmlDocument();
@@ -493,7 +575,7 @@ namespace ParserCatalog
         /// <param name="xApage">Путь к ссылкам на страницы</param>
         /// <param name="type">По умолчанию Encoding.UTF8</param>
         /// <returns></returns>
-        public static HashSet<string> GetProductLinks(string catalogLink, string cook, string site, string xA, string xApage, Encoding type, string linkPage = "",string host="")
+        public static HashSet<string> GetProductLinks(string catalogLink, string cook, string site, string xA, string xApage, Encoding type, string linkPage = "", string host = "")
         {
             var prLink = new List<string>();
             try
@@ -512,6 +594,23 @@ namespace ParserCatalog
                     type = Encoding.UTF8;
                 var reader = new StreamReader(data, type);
                 string s = reader.ReadToEnd();
+                data.Close();
+                reader.Close();
+                if (s.Contains("\"refresh\""))
+                {
+
+                    var newLink = GetLinkOfString(s);
+                    client = new System.Net.WebClient();
+                    client.Headers.Add(HttpRequestHeader.Cookie, cook);
+                    client.Headers.Add(HttpRequestHeader.Accept, "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
+                    client.Headers.Add(HttpRequestHeader.Referer, catalogLink);
+                    client.Headers.Add(HttpRequestHeader.UserAgent, "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36");
+                    client.Headers.Add(HttpRequestHeader.AcceptLanguage, "ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4");
+                    data = client.OpenRead(newLink);
+                    reader = new StreamReader(data, type);
+                    s = reader.ReadToEnd();
+
+                }
                 data.Close();
                 reader.Close();
                 var doc = new HtmlAgilityPack.HtmlDocument();
@@ -614,6 +713,7 @@ namespace ParserCatalog
                                     prLink.Add(host + WebUtility.HtmlDecode(p.Attributes["href"].Value));
                                 }
                             }
+                            Thread.Sleep(7000);
                         }
                     }
 
@@ -650,7 +750,7 @@ namespace ParserCatalog
                     foreach (var p in a)
                     {
                         var res = p.Attributes["href"].Value;
-                        if(!res.Contains(host))
+                        if (!res.Contains(host))
                             prLink.Add(host + WebUtility.HtmlDecode(res));
                         else
                             prLink.Add(WebUtility.HtmlDecode(res));
@@ -659,10 +759,10 @@ namespace ParserCatalog
                     if (pages != null)
                     {
                         var max = 0;
-                        var l = pages[0].Attributes["href"].Value;
-                        var num = Regex.Replace(l.Substring(l.LastIndexOf("/"), l.Length - l.LastIndexOf("/")),@"[^\d]", "");
+                        var l = HttpUtility.HtmlDecode(pages[0].Attributes["href"].Value);
+                        var num = Regex.Replace(l.Substring(l.LastIndexOf(strPage), l.Length - l.LastIndexOf(strPage)), @"[^\d]", "");
                         var tr = Int32.TryParse(num, out max);
-                        
+
                         for (var i = 2; i <= max; i++)
                         {
                             var web2 = new HtmlWeb();
@@ -688,7 +788,13 @@ namespace ParserCatalog
             return new HashSet<string>(prLink);
         }
 
-        public static HashSet<string> GetProductLinks(string catalogLink, string cook, string site, string xA, Encoding type, string host = "")
+        public static string GetLinkOfString(string text)
+        {
+            var beg = text.IndexOf("http:");
+            var link = text.Substring(beg, text.IndexOf("\"", beg + 3) - beg);
+            return link;
+        }
+        public static HashSet<string> GetProductLinks(string catalogLink, string cook, string site, string xA, Encoding type, string host = "", string linkEnd = "")
         {
             var prLink = new List<string>();
             try
@@ -699,11 +805,28 @@ namespace ParserCatalog
                 client.Headers.Add(HttpRequestHeader.Referer, site + "/");
                 client.Headers.Add(HttpRequestHeader.UserAgent, "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36");
                 client.Headers.Add(HttpRequestHeader.AcceptLanguage, "ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4");
-                var data = client.OpenRead(catalogLink);
+                var data = client.OpenRead(catalogLink + linkEnd);
                 if (type == null)
                     type = Encoding.UTF8;
                 var reader = new StreamReader(data, type);
                 string s = reader.ReadToEnd();
+                data.Close();
+                reader.Close();
+                if (s.Contains("\"refresh\""))
+                {
+
+                    var newLink = GetLinkOfString(s) + linkEnd;
+                    client = new System.Net.WebClient();
+                    client.Headers.Add(HttpRequestHeader.Cookie, cook);
+                    client.Headers.Add(HttpRequestHeader.Accept, "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
+                    client.Headers.Add(HttpRequestHeader.Referer, catalogLink);
+                    client.Headers.Add(HttpRequestHeader.UserAgent, "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36");
+                    client.Headers.Add(HttpRequestHeader.AcceptLanguage, "ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4");
+                    data = client.OpenRead(newLink);
+                    reader = new StreamReader(data, type);
+                    s = reader.ReadToEnd();
+
+                }
                 data.Close();
                 reader.Close();
                 var doc = new HtmlAgilityPack.HtmlDocument();
@@ -732,7 +855,7 @@ namespace ParserCatalog
             var cook = "";
             if (cooks != null)
             {
-                if (cooks[0].Contains("path"))
+                if (cooks[0].ToLower().Contains("path"))
                 {
                     foreach (var s in cooks)
                     {
@@ -741,6 +864,10 @@ namespace ParserCatalog
                             var temp = s.Substring(0, s.IndexOf(";") + 1);
                             if (!cook.Contains(temp))
                                 cook += temp + " ";
+                        }
+                        else if (!s.Contains("path"))
+                        {
+                            cook += s + " ";
                         }
                     }
 
@@ -771,32 +898,7 @@ namespace ParserCatalog
             return cook;
         }
 
-        public static void SaveToFile(List<Product> pr, string path, bool photo=false, bool sort=true)
-        {
-            var hash = new HashSet<string>(pr.Select(x => x.Url));
-            var cL = new List<Product>();
-            
-            if (hash.Count != pr.Count &&sort)
-            {
-                foreach (var t in hash)
-                {
-                    foreach (var g in pr)
-                    {
-                        if (t.Contains(g.Url))
-                        {
-                            cL.Add(g);
-                            break;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                cL = pr;
-            }
-            SaveExcel2007<Product>(cL, path, "Каталог", cL.Max(x => x.Photos.Count),photo);
-        }
-        public static void SaveToFile<T>(List<T> pr, string path, bool photo = false, bool sort = true) where T: Product
+        public static void SaveToFile<T>(List<T> pr, string path, bool photo = false, bool sort = true, bool checkAttr = true) where T : Product
         {
             var hash = new HashSet<string>(pr.Select(x => x.Url));
             var cL = new List<T>();
@@ -819,39 +921,50 @@ namespace ParserCatalog
             {
                 cL = pr;
             }
+
+            if (checkAttr)
+            {
+                var articl = cL.Select(x => x.Article).ToList();
+                var articDesc = new HashSet<string>(articl);
+                if (articl.Count() != articDesc.Count())
+                {
+                    var group = articl.GroupBy(x => x).Select(x => new { key = x.Key, count = x.Count() });
+                    foreach (var gr in group)
+                    {
+                        if (gr.count > 1)
+                        {
+                            var allGroupArtics = new List<T>();
+                            allGroupArtics.AddRange(cL.Where(x => x.Article == gr.key));
+
+                            var newArts = new List<T>();
+                            int i = 0;
+                            foreach (var allGroupArtic in allGroupArtics)
+                            {
+                                var temp = allGroupArtic;
+                                if (i != 0)
+                                    temp.Article = temp.Article + "_" + i;
+                                newArts.Add(temp);
+                                i++;
+                            }
+                            //Delete
+                            foreach (var allGroupArtic in allGroupArtics)
+                            {
+                                cL.Remove(allGroupArtic);
+                            }
+                            //add
+                            foreach (var newArt in newArts)
+                            {
+                                cL.Add(newArt);
+                            }
+                        }
+                    }
+                }
+            }
+
             SaveExcel2007<T>(cL, path, "Каталог", cL.Max(x => x.Photos.Count), photo);
         }
-        //public static void SaveToFile(List<Sport> pr, string path)
-        //{
-        //    var hash = new HashSet<string>(pr.Select(x => x.Url));
-        //    var cL = new List<Sport>();
-        //    if (hash.Count != pr.Count)
-        //    {
-        //        foreach (var t in hash)
-        //        {
-        //            foreach (var g in pr)
-        //            {
-        //                if (t.Contains(g.Url))
-        //                {
-        //                    cL.Add(g);
-        //                    break;
-        //                }
-        //            }
-        //        }
-        //    }
-        //    else
-        //    {
-        //        cL = pr;
-        //    }
-        //    SaveExcel2007<Sport>(cL, path, "Каталог", cL.Max(x => x.Photos.Count));
-        //}
 
-        public static void SaveToFileOz(List<Ozkan> pr, string path)
-        {
-            SaveExcel2007<Ozkan>(pr, path, "Каталог", pr.Max(x => x.Photos.Count));
-        }
-
-        public static void SaveExcel2007<T>(IEnumerable<T> list, string path, string nameBook, int countPhoto, bool photo=false)
+        public static void SaveExcel2007<T>(IEnumerable<T> list, string path, string nameBook, int countPhoto, bool photo = false)
         {
             if (list == null || !list.Any()) return;
             Type itemType = typeof(T);
@@ -862,8 +975,8 @@ namespace ParserCatalog
             if (dt.Rows.Count < 1 && dt.Columns.Count < 1)
             {
                 //Создаём столбцы
-                
-                var temps=props.ToList();
+
+                var temps = props.ToList();
                 var ph = props.FirstOrDefault(x => x.Name == "Photo");
                 if (ph != null && photo)
                 {
@@ -871,38 +984,40 @@ namespace ParserCatalog
                     temps.Remove(ph);
                 }
                 dt.Columns.Add("CategoryPath");
-                temps.Remove(props.FirstOrDefault(x=>x.Name=="CategoryPath"));
+                temps.Remove(props.FirstOrDefault(x => x.Name == "CategoryPath"));
                 dt.Columns.Add("Name");
-                temps.Remove(props.FirstOrDefault(x=>x.Name=="Name"));
+                temps.Remove(props.FirstOrDefault(x => x.Name == "Name"));
                 dt.Columns.Add("Article");
-                temps.Remove(props.FirstOrDefault(x=>x.Name=="Article"));
-                var price=props.Where(x=>x.Name.Contains("Price"));
-                foreach(var p in price){
+                temps.Remove(props.FirstOrDefault(x => x.Name == "Article"));
+                var price = props.Where(x => x.Name.Contains("Price"));
+                foreach (var p in price)
+                {
                     dt.Columns.Add(p.Name);
                     temps.Remove(p);
                 }
-                temps.Remove(props.FirstOrDefault(x=>x.Name=="Description"));
-                temps.Remove(props.FirstOrDefault(x=>x.Name=="Url"));
-                var photos=props.Where(x=>x.Name.Contains("Photos"));
-                temps.Remove(props.FirstOrDefault(x=>x.Name=="Photos"));
+                temps.Remove(props.FirstOrDefault(x => x.Name == "Description"));
+                temps.Remove(props.FirstOrDefault(x => x.Name == "Url"));
+                var photos = props.Where(x => x.Name.Contains("Photos"));
+                temps.Remove(props.FirstOrDefault(x => x.Name == "Photos"));
                 foreach (var prop in temps)
                 {
                     if (!prop.Name.Equals("Photo"))
                         dt.Columns.Add(prop.Name);
                 }
-                
+
                 dt.Columns.Add("Description");
                 dt.Columns.Add("Url");
-                foreach(var p in photos){
+                foreach (var p in photos)
+                {
                     for (int i = 0; i <= countPhoto; i++)
-                            dt.Columns.Add(p.Name + i);
+                        dt.Columns.Add(p.Name + i);
                 }
-                
+
                 //foreach (var prop in props)
                 //{
                 //    //dt.Columns.Add("Dosage", typeof(int));
                 //    //dt.Columns.Add(prop.Name); //, prop.PropertyType);
-                    
+
                 //    if (prop.Name == "Photos")
                 //    {
                 //        for (int i = 0; i <= countPhoto; i++)
@@ -922,7 +1037,7 @@ namespace ParserCatalog
                 //    {
                 //        dt.Columns.Add(prop.Name);
                 //    }
-                   
+
                 //}
             }
 
@@ -932,7 +1047,7 @@ namespace ParserCatalog
                 //newRow["CompanyID"] = "NewCompanyID";
                 foreach (var prop in props)
                 {
-                    if(!photo)
+                    if (!photo)
                     {
                         if (prop.Name.Equals("Photo"))
                             continue;
@@ -970,10 +1085,10 @@ namespace ParserCatalog
                     //    {
                     //        newRow[prop.Name] = val.ToString();
                     //    }
-                        //var img = val as System.Drawing.Image;
-                        //MemoryStream ms = new MemoryStream();
-                        //img.Save(ms, img.RawFormat);
-                        //newRow[prop.Name] = ms.ToArray();
+                    //var img = val as System.Drawing.Image;
+                    //MemoryStream ms = new MemoryStream();
+                    //img.Save(ms, img.RawFormat);
+                    //newRow[prop.Name] = ms.ToArray();
                     //}
                     else
                     {
@@ -1074,7 +1189,9 @@ namespace ParserCatalog
                                     //set picture size to fit inside the cell
                                     pic.SetSize(70, 70);
                                 }
-                            }catch(Exception ex){
+                            }
+                            catch (Exception ex)
+                            {
                                 ws.Row(rowIndex).Height = 12;
                             }
                         }
@@ -1135,10 +1252,11 @@ namespace ParserCatalog
                     image.Save(path);
                     return path;
                 }
-            }catch(Exception ex){}
+            }
+            catch (Exception ex) { }
             return string.Empty;
         }
-        
+
         public static Image ResizeOrigImg(Image image, int nWidth, int nHeight)
         {
             int newWidth, newHeight;
