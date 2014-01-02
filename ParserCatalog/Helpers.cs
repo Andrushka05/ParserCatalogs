@@ -25,6 +25,176 @@ namespace ParserCatalog
     public static class Helpers
     {
         //"$(SolutionDir)\ILMerge\merge_all.bat" "$(SolutionDir)" "$(TargetPath)" $(ConfigurationName)
+        public static List<Category> GetListCategory(HtmlDocument doc,string xPath,string shopUrl)
+        {
+            var cats = doc.DocumentNode.SelectNodes(xPath);
+            var catList = new List<Category>();
+            var arr = new string[]
+                    {
+                        "categ", "catal", "woman", "man", "katalog", "kategorii", "platja", "aksessuary", "roomdecor",
+                        "folder", "collect","kategoriya","cat="
+                    };
+            foreach (var cat in cats)
+            {
+                if (cat.Attributes.Count > 0)
+                {
+                    var link = cat.Attributes["href"].Value;
+                    bool good = arr.Any(ar => link.Contains(ar));
+                    if (link.Contains("s-trikbel") || shopUrl.Contains("artvision-opt") ||
+                        shopUrl.Contains("opt-ekonom") || shopUrl.Contains("witerra") ||
+                        shopUrl.Contains("ru.gipnozstyle") || shopUrl.Contains("trikotage") ||
+                        shopUrl.Contains("npopt") || shopUrl.Contains("japan-cosmetic") ||
+                        shopUrl.Contains("liora-shop") || shopUrl.Contains("opttextil") || shopUrl.Contains("donnasara") || shopUrl.Contains("besthat"))
+                        good = true;
+                    if (link.Contains("roomdecor") && (link.Contains("6195") || link.Contains("6159")))
+                        good = false;
+
+                    if (shopUrl.Contains("xn----0tbbbddeld.xn--p1ai") || shopUrl.Contains("td-adel"))
+                    {
+                        var t1 = cat.ParentNode.InnerHtml;
+                        if (t1.Contains("<ul") || link.Contains("new"))
+                            good = false;
+                    }
+
+                    if (good)
+                    {
+                        if (shopUrl.Contains("www.trimedwedya.ru"))
+                            link = "http://www.trimedwedya.ru" + link;
+                        else if (shopUrl.Contains("td-adel"))
+                            link = "http://td-adel.ru" + link;
+                        else if (shopUrl.Contains("xn----0tbbbddeld.xn--p1ai"))
+                            link = "http://xn----0tbbbddeld.xn--p1ai/" + link;
+                        else if (shopUrl.Contains("lemming.su"))
+                            link = "http://lemming.su" + link;
+                        else if (shopUrl.Contains("vsspb"))
+                            link = "http://vsspb.com" + link;
+                        else if (!link.Contains(shopUrl))
+                            link = shopUrl + link;
+                        catList.Add(new Category() { Name = cat.InnerText, Url = WebUtility.HtmlDecode(link) });
+                    }
+                }
+            }
+            return catList;
+        } 
+        public static string GetShopCatLink(string shopUrl)
+        {
+            var query = "//ul/li/a";
+            if (shopUrl.Contains("trimedwedya") || shopUrl.Contains("artvision-opt"))
+                query = "//ul/li/ul/li/a";
+            else if (shopUrl.Contains("butterfly-dress"))
+                query = "//ul/li/ul/li/div/a";
+            else if (shopUrl.Contains("s-trikbel"))
+                query = "//li[contains(concat(' ', @class, ' '), ' name ')]/a";
+            else if (shopUrl.Contains("roomdecor"))
+                query = "//li/ul/li/a";
+            else if (shopUrl.Contains("nashipupsi"))
+                query = "//a[contains(concat(' ', @href, ' '), 'folder')]";
+            else if (shopUrl.Contains("opt-ekonom"))
+                query = "//span[contains(concat(' ', @class, ' '), ' inner ')]/a";
+            else if (shopUrl.Contains("lemming"))
+                query = "//span/a";
+            else if (shopUrl.Contains("piniolo"))
+                query = "//li[contains(concat(' ', @class, ' '), ' item ')]/a";
+            else if (shopUrl.Contains("witerra"))
+                query = "//td[contains(concat(' ', @class, ' '), ' boxText ')]/a";
+            else if (shopUrl.Contains("ru.gipnozstyle"))
+                query = "//div[contains(concat(' ', @class, ' '), ' twocol ')]/a";
+            else if (shopUrl.Contains("shop-nogti"))
+                query = "//div/div/div/a";
+            else if (shopUrl.Contains("iv-trikotage"))
+                query = "//div[contains(concat(' ', @class, ' '), ' menu_spec ')]/ul/li/a";
+            else if (shopUrl.Contains("optovik-centr"))
+                query = "//a[contains(concat(' ', @class, ' '), ' mainlevel_frontpage_categories ')]";
+            else if (shopUrl.Contains("japan-cosmetic"))
+                query = "//div[contains(concat(' ', @class, ' '), 'moduletableproizv')]/div/a";
+            else if (shopUrl.Contains("ekb-opt"))
+                query = "//p[contains(concat(' ', @class, ' '), ' catalog level1')]/a";
+            else if (shopUrl.Contains("aimico-kids"))
+                query = "//ul[contains(concat(' ', @class, ' '), ' aim-vmenu')]/li/a";
+            else if (shopUrl.Contains("texxit"))
+                query = "//ul[contains(concat(' ', @class, ' '), ' menu')]/li/a";
+            else if (shopUrl.Contains("liora-shop"))
+                query = "//ul[contains(concat(' ', @class, ' '), 'level1')]/li/a";
+            else if (shopUrl.Contains("vsspb"))
+                query = "//ul[contains(concat(' ', @class, ' '), 'menu_ver')]/li/a | //ul[contains(concat(' ', @class, ' '), 'menu_ver')]/li/ul/li/a";
+            else if (shopUrl.Contains("stilgi"))
+                query = "//td/script[2]";
+            else if (shopUrl.Contains("stefanika"))
+                query = "//ul/li/div/a";
+            else if (shopUrl.Contains("opttextil"))
+                query = "//div[contains(concat(' ', @class, ' '), ' elem ')]/a | //div[contains(concat(' ', @class, ' '), ' popsmenu ')]/div/span/a";
+            else if (shopUrl.Contains("bus-i-nka"))
+                query = "//ul[contains(concat(' ', @class, ' '), ' categories ')]/li/a";
+            else if (shopUrl.Contains("donnasara"))
+                query = "//ul[contains(concat(' ', @class, ' '), ' b-sidebar-menu__submenu ')]/li/a";
+            else if (shopUrl.Contains("lefik"))
+                query = "//ul[contains(concat(' ', @class, ' '), ' collections-list ')]/li/a | //ul[contains(concat(' ', @class, ' '), ' subcol ')]/li/a";
+            else if (shopUrl.Contains("topopt"))
+                query = "//div[contains(concat(' ', @class, ' '), 'newMenu')]/div/a";
+            else if (shopUrl.Contains("besthat"))
+                query = "//ul[contains(concat(' ', @class, ' '), 'menu-subcategories')]/li/a";
+            else if (shopUrl.Contains("colgotki"))
+                query = "//div[contains(concat(' ', @class, ' '), 'art-BlockContent-body')]/a";
+            else if (shopUrl.Contains("voolya"))
+                query = "//div[contains(concat(' ', @class, ' '), 'menu')]/a";
+            return query;
+        }
+        //public static HashSet<string> GetManyLevelCatalog(string catalogUrl,string xPath1, string xPath2,string cook,string site,)
+        //{
+        //    var res = new HashSet<string>();
+
+        //    var prod = Helpers.GetProductLinks(catalog.Url + "&limit=400", cook, "http://www.colgotki.com",
+        //            "//div[contains(concat(' ', @class, ' '), ' browseProductContainer ')]/a", null);
+        //    if (prod.Count == 0)
+        //    {
+        //        var cat = Helpers.GetProductLinks(catalog.Url, cook, "http://optovik-centr.ru", "//td[contains(concat(' ', @align, ' '), ' center ')]/a", null);
+        //        if (cat.Any())
+        //        {
+        //            var temp = new List<string>();
+        //            foreach (var c in cat)
+        //            {
+        //                var tr = Helpers.GetProductLinks(catalog.Url + "&limit=400", cook, "http://www.colgotki.com",
+        //                            "//div[contains(concat(' ', @class, ' '), ' browseProductContainer ')]/a", null);
+        //                temp.AddRange(tr.ToList());
+        //            }
+        //            prod = new HashSet<string>(temp);
+        //        }
+        //    }
+
+        //    var tr = Helpers.GetProductLinks(c1, cook, "http://shop-nogti.ru", "//div[contains(concat(' ', @class, ' '), ' browseProductContainer ')]/h2/a", null);
+        //    if (tr.Any())
+        //        temp.AddRange(tr.ToList());
+        //    else
+        //    {
+        //        var doc2 = Helpers.GetHtmlDocument(c1, catalog.Url, null, cook);
+        //        var cat2 = Helpers.GetPhoto(doc2, "//tr/td/a", "", "http://shop-nogti.ru", "", "categ");
+        //        if (cat2.Any())
+        //        {
+        //            foreach (var c2 in cat2)
+        //            {
+        //                var tr2 = Helpers.GetProductLinks(c2, cook, "http://shop-nogti.ru", "//div[contains(concat(' ', @class, ' '), ' browseProductContainer ')]/h2/a", null);
+        //                if (tr2.Any())
+        //                    temp.AddRange(tr2.ToList());
+        //                else
+        //                {
+        //                    var doc3 = Helpers.GetHtmlDocument(c2, c1, null, cook);
+        //                    var cat3 = Helpers.GetPhoto(doc3, "//tr/td/a", "", "http://shop-nogti.ru", "", "categ");
+        //                    if (cat3.Any())
+        //                    {
+        //                        foreach (var c3 in cat3)
+        //                        {
+        //                            var tr3 = Helpers.GetProductLinks(c3, cook, "http://shop-nogti.ru", "//div[contains(concat(' ', @class, ' '), ' browseProductContainer ')]/h2/a", null);
+        //                            if (tr3.Any())
+        //                                temp.AddRange(tr3.ToList());
+        //                        }
+        //                    }
+        //                }
+        //            }
+        //        }
+        //    }
+        //    return res;
+        //} 
+        
         /// <summary>
         /// Вытаскивает текст без тегов, теги заменяются \r\n
         /// </summary>
