@@ -12,6 +12,10 @@ namespace ParserCatalog
         public string Name { get; set; }
         public string Description { get; set; }
         public string Price { get; set; }
+        public string client_price { get; set; }
+        public string state { get; set; }
+        public string main_categories { get; set; }
+        public string article { get; set; }
         public string Url { get; set; }
         public string Photo { get; set; }
         public List<string> Photos { get; set; }

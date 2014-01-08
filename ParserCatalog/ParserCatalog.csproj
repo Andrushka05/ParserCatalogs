@@ -112,8 +112,10 @@
     </Compile>
     <Compile Include="Helpers.cs" />
     <Compile Include="JapanCosmetic.cs" />
+    <Compile Include="Maximum.cs" />
     <Compile Include="Ozkan.cs" />
     <Compile Include="Product.cs" />
+    <Compile Include="ProductPrices.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Shop.cs" />

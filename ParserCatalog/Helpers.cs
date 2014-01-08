@@ -308,7 +308,6 @@ namespace ParserCatalog
             }
 
         }
-
         public static HtmlAgilityPack.HtmlDocument GetHtmlDocument(string url, string refererLink, Encoding encode, string cook = "")
         {
             var s = "";
@@ -335,7 +334,6 @@ namespace ParserCatalog
             catch (Exception ex) { }
             return null;
         }
-
         public static List<string> GetPhoto(HtmlAgilityPack.HtmlDocument doc, string xPath1, string xPath2 = "", string host1 = "", string host2 = "", string word = "", string att1 = "href", string att2 = "src")
         {
             var phs = new List<string>();
@@ -375,7 +373,6 @@ namespace ParserCatalog
             }
             return new HashSet<string>(phs).ToList();
         }
-
         public static string GetItemsAttributt(HtmlAgilityPack.HtmlDocument doc, string xPath, string word, string attribut, List<string> notWord, string split = "\r\n")
         {
             var temp = "";
@@ -417,7 +414,6 @@ namespace ParserCatalog
             }
             return temp;
         }
-
         public static List<string> GetItemsAttributtList(HtmlAgilityPack.HtmlDocument doc, string xPath, string word, string attribut, List<string> notWord, List<string> replace)
         {
             var temp = new List<string>();
@@ -511,7 +507,6 @@ namespace ParserCatalog
             var res = new HashSet<string>(temp);
             return res.ToList();
         }
-
         /// <summary>
         /// Получает строку с данными из массива inner html element
         /// </summary>
@@ -562,7 +557,6 @@ namespace ParserCatalog
             }
             return temp;
         }
-
         public static List<string> GetItemsInnerTextList(HtmlAgilityPack.HtmlDocument doc, string xPath, string word, List<string> notWord, List<string> replace)
         {
             var temp = new List<string>();
@@ -654,7 +648,6 @@ namespace ParserCatalog
             }
             return temp;
         }
-
         /// <summary>
         /// Получить содержимое тега data[numberObject].InnerText.Trim()
         /// </summary>
@@ -673,7 +666,6 @@ namespace ParserCatalog
             }
             return d;
         }
-
         public static string GetItemsInnerHtml(HtmlAgilityPack.HtmlDocument doc, string xPath, string word, List<string> notWord, string split = "\r\n")
         {
             var temp = "";
@@ -715,7 +707,6 @@ namespace ParserCatalog
             }
             return temp;
         }
-
         public static string GetItemInnerHtml(HtmlAgilityPack.HtmlDocument doc, string xPath, int numberObject = 0)
         {
             var data = doc.DocumentNode.SelectNodes(xPath);
@@ -727,7 +718,6 @@ namespace ParserCatalog
             }
             return d;
         }
-
         public static string GetEncodingCategory(string str)
         {
             var win = Encoding.GetEncoding("windows-1251");
@@ -825,7 +815,6 @@ namespace ParserCatalog
             catch (Exception ex) { }
             return new HashSet<string>(prLink);
         }
-
         public static HashSet<string> GetProductLinks(string catalogLink, string cook, string site, string xA, string xApage, string strPage, Encoding type, int numberMaxLink = 2, string host = "")
         {
             var prLink = new List<string>();
@@ -949,6 +938,35 @@ namespace ParserCatalog
                                         prLink.Add(WebUtility.HtmlDecode(res));
                                 }
                             }
+                            if (i == max)
+                            {
+                                var pages2 = doc2.DocumentNode.SelectNodes(xApage);
+                                
+                                var max2 = 0;
+                                var l2 = HttpUtility.HtmlDecode(pages2[0].Attributes["href"].Value);
+                                var num2 = Regex.Replace(l2.Substring(l2.LastIndexOf(strPage), l2.Length - l2.LastIndexOf(strPage)), @"[^\d]", "");
+                                var tr2 = Int32.TryParse(num2, out max2);
+                                if (max2 > max)
+                                {
+                                    for (var j = max+1; j <= max2; j++)
+                                    {
+                                        var web3 = new HtmlWeb();
+                                        HtmlAgilityPack.HtmlDocument doc3 = web3.Load(catalogLink + strPage + j);
+                                        var a3 = doc3.DocumentNode.SelectNodes(xA);
+                                        if (a3 != null)
+                                        {
+                                            foreach (var p in a3)
+                                            {
+                                                var res = p.Attributes["href"].Value;
+                                                if (!res.Contains(host))
+                                                    prLink.Add(host + WebUtility.HtmlDecode(res));
+                                                else
+                                                    prLink.Add(WebUtility.HtmlDecode(res));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
 
@@ -1007,7 +1025,10 @@ namespace ParserCatalog
                 {
                     foreach (var p in a)
                     {
-                        prLink.Add(host + WebUtility.HtmlDecode(p.Attributes["href"].Value));
+                        var temp = WebUtility.HtmlDecode(p.Attributes["href"].Value);
+                        if (!temp.Contains(host))
+                            temp = host + temp;
+                        prLink.Add(temp);
                     }
                 }
             }
@@ -1078,7 +1099,6 @@ namespace ParserCatalog
             //}
             return cook;
         }
-
         public static void SaveToFile<T>(List<T> pr, string path, bool photo = false, bool sort = true, bool checkAttr = true) where T : Product
         {
             var hash = new HashSet<string>(pr.Select(x => x.Url));
@@ -1118,7 +1138,8 @@ namespace ParserCatalog
                             allGroupArtics.AddRange(cL.Where(x => x.Article == gr.key));
 
                             var newArts = new List<T>();
-                            int i = 0;
+                            int i = GetUniqArtic(allGroupArtics[0].Url);
+                            
                             foreach (var allGroupArtic in allGroupArtics)
                             {
                                 var temp = allGroupArtic;
@@ -1144,14 +1165,21 @@ namespace ParserCatalog
 
             SaveExcel2007<T>(cL, path, "Каталог", cL.Max(x => x.Photos.Count), photo);
         }
-
+        public static int GetUniqArtic(string link)
+        {
+            var num = Regex.Replace(link, @"[^\d]", "");
+            if (num.Length == 0)
+                num = link.Length.ToString();
+            var res = "";
+            res = num.Length>2 ? num.Substring(num.Length - 2, 2) : num;
+            return Int32.Parse(res);
+        }
         public static void SaveExcel2007<T>(IEnumerable<T> list, string path, string nameBook, int countPhoto, bool photo = false)
         {
             if (list == null || !list.Any()) return;
             Type itemType = typeof(T);
             var props = itemType.GetProperties(BindingFlags.Public | BindingFlags.Instance).OrderBy(p => p.Name);
-
-
+            
             var dt = new DataTable(itemType.Name) { Locale = System.Threading.Thread.CurrentThread.CurrentCulture };
             if (dt.Rows.Count < 1 && dt.Columns.Count < 1)
             {
@@ -1164,18 +1192,39 @@ namespace ParserCatalog
                     dt.Columns.Add("Photo");
                     temps.Remove(ph);
                 }
+                dt.Columns.Add("main_categories");
+                temps.Remove(props.FirstOrDefault(x => x.Name == "main_categories"));
                 dt.Columns.Add("CategoryPath");
                 temps.Remove(props.FirstOrDefault(x => x.Name == "CategoryPath"));
                 dt.Columns.Add("Name");
                 temps.Remove(props.FirstOrDefault(x => x.Name == "Name"));
+                dt.Columns.Add("article");
+                temps.Remove(props.FirstOrDefault(x => x.Name == "article"));
                 dt.Columns.Add("Article");
                 temps.Remove(props.FirstOrDefault(x => x.Name == "Article"));
+                var prices = props.Where(x => x.Name.Contains("Prices"));
+                temps.Remove(props.FirstOrDefault(x => x.Name == "Prices"));
                 var price = props.Where(x => x.Name.Contains("Price"));
                 foreach (var p in price)
                 {
-                    dt.Columns.Add(p.Name);
-                    temps.Remove(p);
+                    if (!p.Name.Contains("Prices"))
+                    {
+                        dt.Columns.Add(p.Name);
+                        temps.Remove(p);
+                    }
                 }
+            
+                if (prices.Any())
+                {
+                    foreach (var p in prices)
+                    {
+                        for (int i = 0; i <= 3; i++)
+                            dt.Columns.Add(p.Name + i);
+                    }
+                }
+                dt.Columns.Add("client_price");
+                temps.Remove(props.FirstOrDefault(x => x.Name == "client_price"));
+                temps.Remove(props.FirstOrDefault(x => x.Name == "state"));
                 temps.Remove(props.FirstOrDefault(x => x.Name == "Description"));
                 temps.Remove(props.FirstOrDefault(x => x.Name == "Url"));
                 var photos = props.Where(x => x.Name.Contains("Photos"));
@@ -1186,6 +1235,7 @@ namespace ParserCatalog
                         dt.Columns.Add(prop.Name);
                 }
 
+                dt.Columns.Add("state");
                 dt.Columns.Add("Description");
                 dt.Columns.Add("Url");
                 foreach (var p in photos)
@@ -1193,33 +1243,6 @@ namespace ParserCatalog
                     for (int i = 0; i <= countPhoto; i++)
                         dt.Columns.Add(p.Name + i);
                 }
-
-                //foreach (var prop in props)
-                //{
-                //    //dt.Columns.Add("Dosage", typeof(int));
-                //    //dt.Columns.Add(prop.Name); //, prop.PropertyType);
-
-                //    if (prop.Name == "Photos")
-                //    {
-                //        for (int i = 0; i <= countPhoto; i++)
-                //            dt.Columns.Add(prop.Name + i);
-                //    }
-                //    else if (prop.Name.Equals("Photo"))
-                //    {
-                //        if (photo)
-                //        {
-                //            DataColumn column = new DataColumn("Photo"); //Create the column.
-                //            //column.DataType = System.Type.GetType("System.Byte[]"); //Type byte[] to store image bytes.
-                //            //column.AllowDBNull = true;
-                //            dt.Columns.Add(column);
-                //        }
-                //    }
-                //    else
-                //    {
-                //        dt.Columns.Add(prop.Name);
-                //    }
-
-                //}
             }
 
             foreach (var x in list)
@@ -1308,23 +1331,70 @@ namespace ParserCatalog
                     foreach (DataColumn dc in dt.Columns) //Creating Headings
                     {
                         var cell = ws.Cells[rowIndex, colIndex];
-
+                        var cel2 = ws.Cells[rowIndex+1, colIndex];
                         //Setting the background color of header cells to Gray
-                        var fill = cell.Style.Fill;
-                        fill.PatternType = ExcelFillStyle.Solid;
-                        fill.BackgroundColor.SetColor(Color.Gray);
-
+                        var fill = cel2.Style.Fill;
+                        //fill.PatternType = ExcelFillStyle.Solid;
+                        //fill.BackgroundColor.SetColor(Color.Gray);
+                        cel2.Style.Font.Bold = true;
 
                         //Setting Top/left,right/bottom borders.
-                        var border = cell.Style.Border;
+                        var border = cel2.Style.Border;
                         border.Bottom.Style =
                             border.Top.Style =
                             border.Left.Style =
                             border.Right.Style = ExcelBorderStyle.Thin;
 
                         //Setting Value in cell
-                        cell.Value = dc.ColumnName;
 
+                        cell.Value = dc.ColumnName;
+                        if (dc.ColumnName == "Photo")
+                            cel2.Value = "Фото";
+                        else if (dc.ColumnName == "CategoryPath")
+                            cel2.Value = "Рубрика в каталоге закупки";
+                        else if (dc.ColumnName == "Name")
+                            cel2.Value = "Название";
+                        else if (dc.ColumnName == "Article")
+                            cel2.Value = "Артикул поставщика (необязательно)";
+                        else if (dc.ColumnName == "Size")
+                            cel2.Value = "Размер";
+                        else if (dc.ColumnName == "Color")
+                            cel2.Value = "Цвет";
+                        else if (dc.ColumnName.Contains("Prices"))
+                        {
+                            var reg = Regex.Replace(dc.ColumnName, @"[^\d]", "");
+                            cel2.Value = "Оптовая цена " + reg;
+                        }
+                        else if (dc.ColumnName.Contains("Price"))
+                        {
+                            var reg = Regex.Replace(dc.ColumnName, @"[^\d]", "");
+                            if(reg.Length==0)
+                                cel2.Value = "Оптовая цена";
+                            else
+                                cel2.Value = "Оптовая цена "+reg;
+                        }
+                        else if (dc.ColumnName == "Description")
+                            cel2.Value = "Описание";
+                        else if (dc.ColumnName == "Url")
+                            cel2.Value = "Ссылка на сайте поставщика";
+                        else if (dc.ColumnName.Contains("Photos"))
+                        {
+                            var reg = Regex.Replace(dc.ColumnName, @"[^\d]", "");
+                            if (reg.Length == 0)
+                                cel2.Value = "Фото 1";
+                            else
+                                cel2.Value = "Фото " + reg;
+                        }
+                        else if (dc.ColumnName == "state")
+                            cel2.Value = "Статус";
+                        else if (dc.ColumnName == "client_price")
+                            cel2.Value = "Цена c орг. сбором";
+                        else if (dc.ColumnName == "main_categories")
+                            cel2.Value = "Рубрика в общем каталоге";
+                        else if (dc.ColumnName == "article")
+                            cel2.Value = "Артикул";
+                        else
+                            cel2.Value = dc.ColumnName;
                         colIndex++;
                     }
                 }
