@@ -27,7 +27,7 @@ namespace ParserCatalog
         {
             InitializeComponent();
         }
-
+        //a[0].ParentNode.ParentNode.SelectNodes("//h3/following-sibling::p[text() and not(text()='&nbsp;') and not(text()='\r\n&nbsp;')]");
         private void Form1_Load(object sender, EventArgs e)
         {
             shops = new List<Shop>();
@@ -1783,13 +1783,46 @@ namespace ParserCatalog
 
             foreach (var catalog in list)
             {
-                var prod = Helpers.GetProductLinks(catalog.Url, cook, "http://texxit.ru", "//h3/a", null);
-
-                if (prod.Count == 0)
+                //var prod = Helpers.GetProductLinks(catalog.Url, cook, "http://texxit.ru", "//h3/a", null);
+                var prLink = new List<Category>();
+                try
+                {
+                    var client = new System.Net.WebClient();
+                    client.Headers.Add(HttpRequestHeader.Cookie, cook);
+                    client.Headers.Add(HttpRequestHeader.Accept, "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
+                    client.Headers.Add(HttpRequestHeader.Referer, "http://texxit.ru/");
+                    client.Headers.Add(HttpRequestHeader.UserAgent, "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36");
+                    client.Headers.Add(HttpRequestHeader.AcceptLanguage, "ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4");
+                    var data = client.OpenRead(catalog.Url);
+                    var reader = new StreamReader(data, Encoding.UTF8);
+                    string s = reader.ReadToEnd();
+                    data.Close();
+                    reader.Close();
+                    var doc = new HtmlAgilityPack.HtmlDocument();
+                    doc.LoadHtml(s);
+                    var a = doc.DocumentNode.SelectNodes("//h3/a");
+                   
+                    if (a != null)
+                    {
+                        var par = a[0].ParentNode.ParentNode.SelectNodes("//h3/following-sibling::p[text() and not(text()='&nbsp;') and not(text()='\r\n&nbsp;')]");
+                        int i = 0;
+                        foreach (var p in a)
+                        {
+                            var temp = WebUtility.HtmlDecode(p.Attributes["href"].Value);
+                            if (!temp.Contains("http://texxit.ru"))
+                                temp = "http://texxit.ru" + temp;
+                            prLink.Add(new Category(){Url=temp,Name=par[i].InnerText.Trim()});
+                            i++;
+                        }
+                    }
+                }
+                catch (Exception ex) { }
+                //var prod = new HashSet<string>(prLink);
+                if (prLink.Count == 0)
                     continue;
 
                 //int countRequest = 0;
-                foreach (var res in prod)
+                foreach (var res in prLink)
                 {
                     //try
                     //{
@@ -1798,7 +1831,7 @@ namespace ParserCatalog
                     //    Thread.Sleep(5000);
                     //}
 
-                    var doc2 = Helpers.GetHtmlDocument(res, catalog.Url, null, cook);
+                    var doc2 = Helpers.GetHtmlDocument(res.Url, catalog.Url, null, cook);
                     if (doc2 == null)
                         continue;
                     var col = "";
@@ -1829,11 +1862,11 @@ namespace ParserCatalog
 
                     products.Add(new Product()
                     {
-                        Url = res,
+                        Url = res.Url,
                         Article = artic,
                         Color = col,
                         Description = desc,
-                        Name = title,
+                        Name = res.Name,
                         Price = price,
                         CategoryPath = cat,
                         Size = size,
@@ -4135,20 +4168,23 @@ namespace ParserCatalog
                                 {
                                     var title2 = "";
                                     var desc3 = "";
+                                    var page = new HtmlAgilityPack.HtmlDocument();
+                                    page.LoadHtml(HttpUtility.HtmlDecode(tr.InnerHtml));
                                     var tit1 =
-                                        doc2.DocumentNode.SelectNodes(
+                                        page.DocumentNode.SelectNodes(
                                             "//div[contains(concat(' ', @class, ' '), ' tovar-card__title ')]");
                                     if (tit1 != null)
                                     {
                                         title2 = tit1[0].InnerText.Trim();
                                         if (title2.ToLower().Contains("размер"))
                                             size = title2.ToLower().Replace("размер", "").Trim();
+                                        desc = tit1[0].InnerText.Trim();
                                     }
                                     //if (!string.IsNullOrEmpty(title.Trim()))
                                     //    title2 = title + " " + title2;
                                     //artic = title2;
                                     var des =
-                                        doc2.DocumentNode.SelectNodes(
+                                        page.DocumentNode.SelectNodes(
                                             "//div[contains(concat(' ', @class, ' '), ' tovar-card__text1 ')]");
                                     if (des != null)
                                         desc3 = des[0].InnerText.Trim();
@@ -4160,7 +4196,7 @@ namespace ParserCatalog
                                             .Replace("\t", "")
                                             .Replace("  ", "").Trim();
                                     var pr =
-                                        doc2.DocumentNode.SelectNodes(
+                                        page.DocumentNode.SelectNodes(
                                             "//input[contains(concat(' ', @name, ' '), ' price ')]");
                                     if (pr != null)
                                         price = pr[0].Attributes["value"].Value.Replace(".", ",").Trim();
@@ -4182,6 +4218,7 @@ namespace ParserCatalog
                                         title = "";
                                         cat = "";
                                         col = "";
+                                        desc = "";
                                         phs = new List<string>();
                                     }
                                 }
@@ -4209,7 +4246,7 @@ namespace ParserCatalog
                 }
 
             }
-            Helpers.SaveToFile(products, path.Text + @"\Adel.xlsx", false, false);
+            Helpers.SaveToFile(products, path.Text + @"\Adel.xlsx", false, false,false);
             StatusStrip("Adel");
         }
         private void GetArtvision(IEnumerable<Category> list)
@@ -5667,7 +5704,7 @@ namespace ParserCatalog
                 }
 
             }
-            Helpers.SaveToFile(products, path.Text + @"\Ozkan.xlsx", false, false);
+            Helpers.SaveToFile(products, path.Text + @"\Ozkan.xlsx", false, false,false);
             StatusStrip("Ozkan");
         }
         private void GetTvoi(IEnumerable<string> list)
