@@ -1386,7 +1386,7 @@ namespace ParserCatalog
                 //    Thread.Sleep(6000);
                 //}
 
-                var doc2 = Helpers.GetHtmlDocument("http://live-toys.com/catalog/67/107.html", "http://live-toys.com", null, cook);
+                var doc2 = Helpers.GetHtmlDocument(res, "http://live-toys.com", null, cook);
                 if (doc2 == null)
                     continue;
                 var col = "";
