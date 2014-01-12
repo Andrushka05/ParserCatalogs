@@ -1162,8 +1162,13 @@ namespace ParserCatalog
                     }
                 }
             }
-
-            SaveExcel2007<T>(cL, path, "Каталог", cL.Max(x => x.Photos.Count), photo);
+            if (typeof (T).Name.Equals("ProductPrices"))
+            {
+                var prpr = cL as List<ProductPrices>;
+                var count = prpr.Max(x => x.Prices.Count);
+                SaveExcel2007<T>(cL, path, "Каталог", cL.Max(x => x.Photos.Count), photo, count);
+            }else
+                SaveExcel2007<T>(cL, path, "Каталог", cL.Max(x => x.Photos.Count), photo);
         }
         public static int GetUniqArtic(string link)
         {
@@ -1174,7 +1179,7 @@ namespace ParserCatalog
             res = num.Length>2 ? num.Substring(num.Length - 2, 2) : num;
             return Int32.Parse(res);
         }
-        public static void SaveExcel2007<T>(IEnumerable<T> list, string path, string nameBook, int countPhoto, bool photo = false)
+        public static void SaveExcel2007<T>(IEnumerable<T> list, string path, string nameBook, int countPhoto, bool photo = false, int countPrices=4)
         {
             if (list == null || !list.Any()) return;
             Type itemType = typeof(T);
@@ -1218,7 +1223,7 @@ namespace ParserCatalog
                 {
                     foreach (var p in prices)
                     {
-                        for (int i = 0; i <= 3; i++)
+                        for (int i = 0; i < countPrices; i++)
                             dt.Columns.Add(p.Name + i);
                     }
                 }
