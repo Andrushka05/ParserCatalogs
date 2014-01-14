@@ -4279,9 +4279,9 @@ namespace ParserCatalog
                                     if (tit1 != null)
                                     {
                                         title2 = tit1[0].InnerText.Trim();
-                                        if (title2.ToLower().Contains("размер"))
+                                        //if (title2.ToLower().Contains("размер"))
                                             size = title2.ToLower().Replace("размер", "").Trim();
-                                        desc = tit1[0].InnerText.Trim();
+                                        //desc += " "+tit1[0].InnerText.Trim();
                                     }
                                     //if (!string.IsNullOrEmpty(title.Trim()))
                                     //    title2 = title + " " + title2;
@@ -4292,7 +4292,7 @@ namespace ParserCatalog
                                     if (des != null)
                                         desc3 = des[0].InnerText.Trim();
                                     if (!string.IsNullOrEmpty(desc.Trim()))
-                                        desc3 = desc + ". " + desc3;
+                                        desc3 = desc.Replace("\n"," ") + ". " + desc3;
                                     desc3 =
                                         desc3.Replace("..", ".")
                                             .Replace("\n", "")
