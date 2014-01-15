@@ -84,7 +84,9 @@ namespace ParserCatalog
             shops.Add(new Shop() { Name = "Topopt", Url = "http://www.topopt.ru" });
             shops.Add(new Shop() { Name = "Besthat", Url = "http://besthat.ru" });
             shops.Add(new Shop() { Name = "Colgotki", Url = "http://www.colgotki.com" });
-            shops.Add(new Shop() { Name = "I-teks-moskva", Url = "http://l-teks-moskva.ru" });
+						shops.Add(new Shop() { Name = "I-teks-moskva", Url = "http://l-teks-moskva.ru" });
+						shops.Add(new Shop() { Name = "Ivselena", Url = "http://www.ivselena.ru" });
+					
 
             shopBigs.Add(new ShopBig()
             {
@@ -149,8 +151,8 @@ namespace ParserCatalog
             var errors = new List<string>();
             Parallel.ForEach(pars, site =>
             {
-                try
-                {
+								//try
+								//{
                     var cL = new List<Category>();
                     var shopUrl = site.Categories[0].Url;
                     if (!site.Catalog)
@@ -337,13 +339,18 @@ namespace ParserCatalog
                         GetVoolya(cL);
                     else if (shopUrl.Contains("l-teks-moskva"))
                         GetLTexsMoskva();
+										else if (shopUrl.Contains("ivselena"))
+										{
+											cL.AddRange(new List<Category>(){new Category() { Url = "http://www.ivselena.ru/catalog/podushki_igrushki/" }, new Category() { Url = "http://www.ivselena.ru/catalog/fartuki/" }});
+											GetIvselena(cL);
+										}
 
                     stL.Add(st.Elapsed.ToString());
-                }
-                catch (Exception ex)
-                {
-                    errors.Add(site.Name + " - Ошибка: " + ex.Message);
-                }
+								//}
+								//catch (Exception ex)
+								//{
+								//		errors.Add(site.Name + " - Ошибка: " + ex.Message);
+								//}
             });
             timeStripStatus.Text = "Время парсинга " + st.Elapsed;
             countStripStatus.Text = "Загружено " + (pars.Count - errors.Count - 1) + " из " + pars.Count;
@@ -368,7 +375,133 @@ namespace ParserCatalog
             }
             Start.Text = "Начать парсинг";
         }
+				private void GetIvselena(IEnumerable<Category> list)
+				{
+					var products = new List<Product>();
+					var cook = Helpers.GetCookiePost("http://www.ivselena.ru/", new NameValueCollection());
 
+					foreach (var catalog in list)
+					{
+						//var prod = Helpers.GetProductLinks2(catalog.Url, cook, "http://www.ivselena.ru",
+						//		"//a[contains(concat(' ', @class, ' '), ' over ')]",
+						//		"//div[contains(concat(' ', @id, ' '), ' paginationControl ')]/a[last()-1] ", "/0/page/", null);
+
+						//if (prod.Count == 0)
+						//	continue;
+
+						int countRequest = 0;
+						//foreach (var res in prod)
+						//{
+							//try
+							//{
+							//if (countRequest % 4 == 0)
+							//{
+							//	Thread.Sleep(7000);
+							//}
+
+						var doc2 = Helpers.GetHtmlDocument(catalog.Url, "http://www.ivselena.ru", Encoding.GetEncoding("windows-1251"), cook);
+							if (doc2 == null)
+								continue;
+							var col = "";
+							var size = "";
+							var desc = "";
+							var cat = "";
+							var phs = new List<string>();
+							var title = Helpers.GetItemInnerText(doc2, "//h2[contains(concat(' ', @id, ' '), ' pagetitle ')]");
+							var artic =title;
+							phs = Helpers.GetPhoto(doc2, "", "//div[contains(concat(' ', @class, ' '), 'catalogue-description')]//img","", "http://www.ivselena.ru");
+							desc = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), 'catalogue-description')]/p|//div[contains(concat(' ', @class, ' '), 'catalogue-description')]/div", "", new List<string>());
+							cat = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @id, ' '), 'breadcrumb')]/a", "", new List<string>() { "Главная" }, "/");
+							var cont = doc2.DocumentNode.SelectNodes("//table[contains(concat(' ', @class, ' '), 'content-table')]/tbody/tr");
+							var price="";
+							if (cont != null)
+							{
+								foreach (var c in cont)
+								{
+									var siz = c.SelectNodes("td[1]");
+									if (siz != null)
+										size = siz[0].InnerText.Replace(title, "").Trim();
+									var pr = c.SelectNodes("td[2]");
+									if (pr != null)
+										price = pr[0].InnerText.Replace("руб.","").Trim();
+									var colLink = c.SelectNodes("td[3]/a");
+									if (colLink != null)
+									{
+										var link=colLink[0].Attributes["href"].Value;
+										if (!link.Contains("ivselena"))
+											link = "http://www.ivselena.ru" + link;
+										var doc3 = Helpers.GetHtmlDocument(link, catalog.Url, Encoding.GetEncoding("windows-1251"), cook);
+										var phs2 = Helpers.GetPhoto(doc3, "//a[contains(concat(' ', @rel, ' '), 'gallery-images')]", "", "http://www.ivselena.ru");
+										if (phs2.Any())
+											phs.AddRange(phs2);
+										var desc2 = Helpers.GetItemsInnerText(doc3, "//td/div[font or span]","",null);
+										if (desc2.Length > 0)
+											desc += "\r\n" + desc2;
+										if (phs2.Count == 36)
+										{
+											link = link + "?PAGEN_1=2";
+											var doc4 = Helpers.GetHtmlDocument(link, catalog.Url, Encoding.GetEncoding("windows-1251"), cook);
+											phs2 = Helpers.GetPhoto(doc4, "//a[contains(concat(' ', @rel, ' '), 'gallery-images')]", "", "http://www.ivselena.ru");
+											col = Helpers.GetItemsInnerText(doc4, "//div[contains(concat(' ', @class, ' '), 'name')]/a", "",null, "; ");
+											if (phs2.Any())
+												phs.AddRange(phs2);
+											if (phs2.Count == 36)
+											{
+												link = link.Replace("?PAGEN_1=2", "?PAGEN_1=3");
+												var doc5 = Helpers.GetHtmlDocument(link, catalog.Url, Encoding.GetEncoding("windows-1251"), cook);
+												phs2 = Helpers.GetPhoto(doc5, "//a[contains(concat(' ', @rel, ' '), 'gallery-images')]", "", "http://www.ivselena.ru");
+												col +=" "+ Helpers.GetItemsInnerText(doc5, "//div[contains(concat(' ', @class, ' '), 'name')]/a", "", null, "; ");
+												if (phs2.Any())
+													phs.AddRange(phs2);
+											}
+										}
+										col += " "+Helpers.GetItemsInnerText(doc3, "//div[contains(concat(' ', @class, ' '), 'name')]/a", "", null,"; ");
+										if (col.Length > 0)
+											col = col.Trim();
+										products.Add(new Product()
+										{
+											Url = catalog.Url,
+											Article = artic,
+											Color = col,
+											Description = desc,
+											Name = title,
+											Price = price,
+											CategoryPath = cat,
+											Size = size,
+											Photos = phs,
+										});
+									}
+									else
+									{
+										products.Add(new Product()
+										{
+											Url = catalog.Url,
+											Article = artic,
+											Color = col,
+											Description = desc,
+											Name = title,
+											Price = price,
+											CategoryPath = cat,
+											Size = size,
+											Photos = phs,
+										});
+									}
+									price = "";
+									size = "";
+									phs=new List<string>();
+								}
+							//}
+										
+							
+							countRequest++;
+							//}
+							//catch (Exception ex) { }
+						}
+
+					}
+					Helpers.SaveToFile(products, path.Text + @"\Ivselena.xlsx");
+					StatusStrip("Ivselena");
+				}
         private void GetLTexsMoskva()
         {
             var products = new List<ProductPrices>();

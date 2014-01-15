@@ -79,7 +79,7 @@ namespace ParserCatalog
         public static string GetShopCatLink(string shopUrl)
         {
             var query = "//ul/li/a";
-            if (shopUrl.Contains("trimedwedya") || shopUrl.Contains("artvision-opt"))
+						if (shopUrl.Contains("trimedwedya") || shopUrl.Contains("artvision-opt") || shopUrl.Contains("ivselena"))
                 query = "//ul/li/ul/li/a";
             else if (shopUrl.Contains("butterfly-dress"))
                 query = "//ul/li/ul/li/div/a";
