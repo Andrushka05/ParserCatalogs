@@ -44,7 +44,7 @@ namespace ParserCatalog
                         shopUrl.Contains("opt-ekonom") || shopUrl.Contains("witerra") ||
                         shopUrl.Contains("ru.gipnozstyle") || shopUrl.Contains("trikotage") ||
                         shopUrl.Contains("npopt") || shopUrl.Contains("japan-cosmetic") ||
-                        shopUrl.Contains("liora-shop") || shopUrl.Contains("opttextil") || shopUrl.Contains("donnasara") || shopUrl.Contains("besthat"))
+												shopUrl.Contains("liora-shop") || shopUrl.Contains("opttextil") || shopUrl.Contains("donnasara") || shopUrl.Contains("besthat") || shopUrl.Contains("amway") || shopUrl.Contains("alltextile"))
                         good = true;
                     if (link.Contains("roomdecor") && (link.Contains("6195") || link.Contains("6159")))
                         good = false;
@@ -111,7 +111,7 @@ namespace ParserCatalog
                 query = "//p[contains(concat(' ', @class, ' '), ' catalog level1')]/a";
             else if (shopUrl.Contains("aimico-kids"))
                 query = "//ul[contains(concat(' ', @class, ' '), ' aim-vmenu')]/li/a";
-            else if (shopUrl.Contains("texxit"))
+            else if (shopUrl.Contains("texxit")||shopUrl.Contains("alltextile"))
                 query = "//ul[contains(concat(' ', @class, ' '), ' menu')]/li/a";
             else if (shopUrl.Contains("liora-shop"))
                 query = "//ul[contains(concat(' ', @class, ' '), 'level1')]/li/a";
@@ -137,6 +137,11 @@ namespace ParserCatalog
                 query = "//div[contains(concat(' ', @class, ' '), 'art-BlockContent-body')]/a";
             else if (shopUrl.Contains("voolya"))
                 query = "//div[contains(concat(' ', @class, ' '), 'menu')]/a";
+						else if (shopUrl.Contains("amway"))
+							query = "//li[contains(concat(' ', @class, ' '), 'menu_product_category')]/a";
+						else if (shopUrl.Contains("arcofam"))
+							query = "//ul[contains(concat(' ', @class, ' '), 'categories test')]/li/a";
+										
             return query;
         }
         //public static HashSet<string> GetManyLevelCatalog(string catalogUrl,string xPath1, string xPath2,string cook,string site,)
