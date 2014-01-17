@@ -153,8 +153,8 @@ namespace ParserCatalog
             var errors = new List<string>();
             Parallel.ForEach(pars, site =>
             {
-                //try
-                //{
+							try
+							{
                 var cL = new List<Category>();
                 var shopUrl = site.Categories[0].Url;
                 if (!site.Catalog)
@@ -354,11 +354,11 @@ namespace ParserCatalog
                     GetAlltextile(cL);
 
                 stL.Add(st.Elapsed.ToString());
-                //}
-                //catch (Exception ex)
-                //{
-                //		errors.Add(site.Name + " - Ошибка: " + ex.Message);
-                //}
+                }
+                catch (Exception ex)
+                {
+                		errors.Add(site.Name + " - Ошибка: " + ex.Message);
+                }
             });
             timeStripStatus.Text = "Время парсинга " + st.Elapsed;
             countStripStatus.Text = "Загружено " + (pars.Count - errors.Count - 1) + " из " + pars.Count;
@@ -551,12 +551,12 @@ namespace ParserCatalog
                 {
                     //try
                     //{
-                    if (countRequest % 4 == 0)
-                    {
-                        Thread.Sleep(7000);
-                    }
+										//if (countRequest % 4 == 0)
+										//{
+										//		Thread.Sleep(7000);
+										//}
 
-                    var doc2 = Helpers.GetHtmlDocument(res, catalog.Url, null, cook);
+										var doc2 = Helpers.GetHtmlDocument(res, catalog.Url, null, cook);
                     if (doc2 == null)
                         continue;
                     var col = "";
@@ -570,27 +570,30 @@ namespace ParserCatalog
                     desc = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), 'content_area')]/p", "", null);
                     if (string.IsNullOrEmpty(artic))
                         artic = title;
-                    phs = Helpers.GetPhoto(doc2, "//a[contains(concat(' ', @class, ' '), 'MagicZoomPlus')]", "", "http://www.amway.ru");
+										phs = Helpers.GetPhoto(doc2, "//a[contains(concat(' ', @class, ' '), 'MagicZoomPlus')]", "//div[contains(concat(' ', @class, ' '), 'content_carousel')]/ul/li/a/img", "http://www.amway.ru", "http://www.amway.ru");
                     cat = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), 'breadcrumb')]/a", "", new List<string>() { "На главную" }, "/");
                     var status = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), 'text_big')]/a", "Временно отсутствующая", null);
                     var count = Helpers.GetPhoto(doc2, "", "//span[contains(concat(' ', @class, ' '), 'img_wrapper')]/img", "", "http://www.amway.ru");
-                    if (count.Any())
+										phs = new HashSet<string>(phs.Select(x => x.Replace("_mini_", "_max_"))).ToList();
+										if (count.Any())
                     {
-                        var artic2 = Helpers.GetItemsInnerTextList(doc2, "//span[contains(concat(' ', @class, ' '), 'sku')]", "", null, null);
-                        artic2 = artic2.Select(x => x.Replace("Артикул:", "").Trim()).ToList();
-                        var price2 = Helpers.GetItemsInnerTextList(doc2, "//span[contains(concat(' ', @class, ' '), 'nowrap')]", "", null, null);
+											var stt=doc2.DocumentNode.InnerHtml.Substring(doc2.DocumentNode.InnerHtml.IndexOf("variantSkus"));
+											var reg = Regex.Matches(stt, @"variantSkus\[(\d*)\]='\w*'").Cast<Match>().Select(m => m.Value.Substring(m.Value.IndexOf("=")+1).Replace("'","")).ToList();
+											var title2 = Regex.Matches(stt, @"variantNames\[(\d*)\]='\w*'").Cast<Match>().Select(m => m.Value.Substring(m.Value.IndexOf("=") + 1).Replace("'", "")).ToList();
+											var price2 = Helpers.GetItemsInnerTextList(doc2, "//span[contains(concat(' ', @class, ' '), 'nowrap')]", "", null, null);
                         price2 = price2.Select(x => x.Replace("RUR", "").Trim()).ToList();
                         phs.AddRange(count);
-                        for (int i = 0; i < artic2.Count; i++)
+											 title+="-";
+                        for (int i = 0; i < reg.Count; i++)
                         {
                             products.Add(new Product()
                             {
                                 Url = i == 0 ? res : "",
-                                Article = artic,
+                                Article = reg[i],
                                 Color = col,
                                 Description = desc,
-                                Name = title,
-                                Price = price,
+                                Name = title+title2[i],
+                                Price = price2[i],
                                 CategoryPath = cat,
                                 Size = size,
                                 Photos = phs,
@@ -599,6 +602,7 @@ namespace ParserCatalog
                             phs = new List<string>();
                             title = "";
                             desc = "";
+														cat = "";
                         }
                     }
                     else
