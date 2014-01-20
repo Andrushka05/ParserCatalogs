@@ -1416,16 +1416,16 @@ namespace ParserCatalog
                 {
                     colIndex = 1;
                     rowIndex++;
-                    var temp = ws.Cells.Where(x => x.Value == dr["article"] && x.Value == dr["Url"]);
-                    if (temp != null)
-                    {
-                        foreach (var t in temp)
-                        {
-                            var tre=t.FullAddress;
-                            var tere = t.FullAddressAbsolute;
+                    //var temp = ws.Cells.Where(x => x.Value == dr["article"] && x.Value == dr["Url"]);
+                    //if (temp != null)
+                    //{
+                    //    foreach (var t in temp)
+                    //    {
+                    //        var tre=t.FullAddress;
+                    //        var tere = t.FullAddressAbsolute;
                             
-                        }
-                    }
+                    //    }
+                    //}
                     foreach (DataColumn dc in dt.Columns)
                     {
                         var cell = ws.Cells[rowIndex, colIndex];
