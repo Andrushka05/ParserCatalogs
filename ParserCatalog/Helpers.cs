@@ -32,7 +32,7 @@ namespace ParserCatalog
             var arr = new string[]
                     {
                         "categ", "catal", "woman", "man", "katalog", "kategorii", "platja", "aksessuary", "roomdecor",
-                        "folder", "collect","kategoriya","cat="
+                        "folder", "collect","kategoriya","cat=","subDivision"
                     };
             foreach (var cat in cats)
             {
@@ -141,7 +141,9 @@ namespace ParserCatalog
 							query = "//li[contains(concat(' ', @class, ' '), 'menu_product_category')]/a";
 						else if (shopUrl.Contains("arcofam"))
 							query = "//ul[contains(concat(' ', @class, ' '), 'categories test')]/li/a";
-										
+						else if (shopUrl.Contains("gap.com"))
+							query = "//ul[contains(concat(' ', @class, ' '), 'gap_navigation')]/li/a";
+																
             return query;
         }
         //public static HashSet<string> GetManyLevelCatalog(string catalogUrl,string xPath1, string xPath2,string cook,string site,)
