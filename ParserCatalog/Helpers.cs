@@ -975,6 +975,22 @@ namespace ParserCatalog
                                 }
                             }
                         }
+                    }else if (xApage.Length == 0)
+                    {
+                        var web3 = new HtmlWeb();
+                        HtmlAgilityPack.HtmlDocument doc3 = web3.Load(catalogLink + strPage + 1);
+                        var a3 = doc3.DocumentNode.SelectNodes(xA);
+                        if (a3 != null)
+                        {
+                            foreach (var p in a3)
+                            {
+                                var res = p.Attributes["href"].Value;
+                                if (!res.Contains(host))
+                                    prLink.Add(host + WebUtility.HtmlDecode(res));
+                                else
+                                    prLink.Add(WebUtility.HtmlDecode(res));
+                            }
+                        }
                     }
 
                 }

@@ -89,12 +89,12 @@ namespace ParserCatalog
             shops.Add(new Shop() { Name = "Amway", Url = "http://www.amway.ru" });
             shops.Add(new Shop() { Name = "Arcofam", Url = "http://arcofam.com.ua" });
             shops.Add(new Shop() { Name = "Alltextile", Url = "http://alltextile.info" });
-						shops.Add(new Shop() { Name = "Gap", Url = "http://www.gap.com/" });
-						shops.Add(new Shop() { Name = "Carters", Url = "http://www.carters.com" });
-						shops.Add(new Shop() { Name = "Oshkosh", Url = "http://www.oshkosh.com" });
-						shops.Add(new Shop() { Name = "Oldnavy.gap", Url = "http://oldnavy.gap.com" });
-						shops.Add(new Shop() { Name = "Limoni", Url = "http://www.limoni.ru/kupit-v-roznicu/store/" });
-						
+            shops.Add(new Shop() { Name = "Gap", Url = "http://www.gap.com" });
+            shops.Add(new Shop() { Name = "Carters", Url = "http://www.carters.com" });
+            shops.Add(new Shop() { Name = "Oshkosh", Url = "http://www.oshkosh.com" });
+            shops.Add(new Shop() { Name = "Oldnavy.gap", Url = "http://oldnavy.gap.com" });
+            shops.Add(new Shop() { Name = "Limoni", Url = "http://www.limoni.ru/kupit-v-roznicu/store/" });
+
 
             shopBigs.Add(new ShopBig()
             {
@@ -159,8 +159,8 @@ namespace ParserCatalog
             var errors = new List<string>();
             Parallel.ForEach(pars, site =>
             {
-							//try
-							//{
+                //try
+                //{
                 var cL = new List<Category>();
                 var shopUrl = site.Categories[0].Url;
                 if (!site.Catalog)
@@ -358,23 +358,23 @@ namespace ParserCatalog
                     GetArcofam(cL);
                 else if (shopUrl.Contains("alltextile"))
                     GetAlltextile(cL);
-								else if (shopUrl.Contains("gap.com"))
-									GetGap(cL);
-								else if (shopUrl.Contains("alltextile"))
-									GetAlltextile(cL);
-								else if (shopUrl.Contains("alltextile"))
-									GetAlltextile(cL);
-								else if (shopUrl.Contains("alltextile"))
-									GetAlltextile(cL);
-								else if (shopUrl.Contains("alltextile"))
-									GetAlltextile(cL);
+                else if (shopUrl.Contains("gap.com"))
+                    GetGap(cL);
+                else if (shopUrl.Contains("alltextile"))
+                    GetAlltextile(cL);
+                else if (shopUrl.Contains("alltextile"))
+                    GetAlltextile(cL);
+                else if (shopUrl.Contains("alltextile"))
+                    GetAlltextile(cL);
+                else if (shopUrl.Contains("alltextile"))
+                    GetAlltextile(cL);
 
                 stL.Add(st.Elapsed.ToString());
-								//}
-								//catch (Exception ex)
-								//{
-								//		errors.Add(site.Name + " - Ошибка: " + ex.Message);
-								//}
+                //}
+                //catch (Exception ex)
+                //{
+                //		errors.Add(site.Name + " - Ошибка: " + ex.Message);
+                //}
             });
             timeStripStatus.Text = "Время парсинга " + st.Elapsed;
             countStripStatus.Text = "Загружено " + (pars.Count - errors.Count - 1) + " из " + pars.Count;
@@ -399,82 +399,82 @@ namespace ParserCatalog
             }
             Start.Text = "Начать парсинг";
         }
-				private void GetGap(IEnumerable<Category> list)
-				{
-					var products = new List<Product>();
-					var cook = Helpers.GetCookiePost("http://www.gap.com//", new NameValueCollection());
+        private void GetGap(IEnumerable<Category> list)
+        {
+            var products = new List<Product>();
+            var cook = Helpers.GetCookiePost("http://www.gap.com//", new NameValueCollection());
 
-					foreach (var catalog in list)
-					{
-						var prod = Helpers.GetProductLinks(catalog.Url, cook, "http://www.gap.com",
-										"//a[contains(concat(' ', @class, ' '), 'category')]", null);
-						if (prod.Count > 0)
-						{
-							var temp = new List<string>();
-							foreach (var cat in prod)
-							{
-								var t1= Helpers.GetProductLinks(catalog.Url, cook, "http://www.gap.com",
-										"//a[contains(concat(' ', @class, ' '), 'productItemName')]", null);
-								temp.AddRange(t1);
-							}
-							prod = new HashSet<string>(temp);
-						}
-						else
-							continue;
+            foreach (var catalog in list)
+            {
+                var prod = Helpers.GetProductLinks2(catalog.Url, cook, "http://www.gap.com",
+                                "//a[contains(concat(' ', @class, ' '), 'category')]","","#pageId=", null);
+                if (prod.Count > 0)
+                {
+                    var temp = new List<string>();
+                    foreach (var cat in prod)
+                    {
+                        var t1 = Helpers.GetProductLinks(cat, cook, "http://www.gap.com",
+                                "//a[contains(concat(' ', @class, ' '), 'productItemName')]", null);
+                        temp.AddRange(t1);
+                    }
+                    prod = new HashSet<string>(temp);
+                }
+                else
+                    continue;
 
-						int countRequest = 0;
-						foreach (var res in prod)
-						{
-							//try
-							//{
-							//if (countRequest % 4 == 0)
-							//{
-							//	Thread.Sleep(7000);
-							//}
+                int countRequest = 0;
+                foreach (var res in prod)
+                {
+                    //try
+                    //{
+                    //if (countRequest % 4 == 0)
+                    //{
+                    //	Thread.Sleep(7000);
+                    //}
 
-							var doc2 = Helpers.GetHtmlDocument(res, catalog.Url, null, cook);
-							if (doc2 == null)
-								continue;
-							var col = "";
-							var size = "";
-							var desc = "";
-							var cat = "";
-							var artic = "";
-							var phs = new List<string>();
-							var title = Helpers.GetItemInnerText(doc2, "//span[contains(concat(' ', @class, ' '), 'productName')]");
-							artic = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @id, ' '), 'productNumber')]");
-							col=Helpers.GetItemsInnerText(doc2, "//label[contains(concat(' ', @for, ' '), 'colorSwatch')]", "", null,"; ");
-							var price = Helpers.GetItemInnerText(doc2, "//span[contains(concat(' ', @id, ' '), 'priceText')]").Trim();
-							size = Helpers.GetItemsInnerText(doc2, "//label[contains(concat(' ', @for, ' '), 'size1Swatch')]", "", null,"; ");
-							desc = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @id, ' '), 'tabWindow')]/ul/li", "", null);
-							if (string.IsNullOrEmpty(artic))
-								artic = title;
-							phs = Helpers.GetPhoto(doc2, "//img[contains(concat(' ', @class, ' '), 'zoomImg')]", "//div[contains(concat(' ', @id, ' '), 'imageThumbs')]/input","","","","src");
-							cat = Helpers.GetEncodingCategory(catalog.Name) + "/" + Helpers.GetItemInnerText(doc2, "//a[contains(concat(' ', @class, ' '), 'categorySelected')]");
-							
+                    var doc2 = Helpers.GetHtmlDocument(res, catalog.Url, null, cook);
+                    if (doc2 == null)
+                        continue;
+                    var col = "";
+                    var size = "";
+                    var desc = "";
+                    var cat = "";
+                    var artic = "";
+                    var phs = new List<string>();
+                    var title = Helpers.GetItemInnerText(doc2, "//span[contains(concat(' ', @class, ' '), 'productName')]");
+                    artic = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @id, ' '), 'productNumber')]");
+                    col = Helpers.GetItemsInnerText(doc2, "//label[contains(concat(' ', @for, ' '), 'colorSwatch')]", "", null, "; ");
+                    var price = Helpers.GetItemInnerText(doc2, "//span[contains(concat(' ', @id, ' '), 'priceText')]").Trim();
+                    size = Helpers.GetItemsInnerText(doc2, "//label[contains(concat(' ', @for, ' '), 'size1Swatch')]", "", null, "; ");
+                    desc = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @id, ' '), 'tabWindow')]/ul/li", "", null);
+                    if (string.IsNullOrEmpty(artic))
+                        artic = title;
+                    phs = Helpers.GetPhoto(doc2, "//img[contains(concat(' ', @class, ' '), 'zoomImg')]", "//div[contains(concat(' ', @id, ' '), 'imageThumbs')]/input", "", "", "", "src");
+                    cat = Helpers.GetEncodingCategory(catalog.Name) + "/" + Helpers.GetItemInnerText(doc2, "//a[contains(concat(' ', @class, ' '), 'categorySelected')]");
 
-							products.Add(new Product()
-							{
-								Url = res,
-								Article = artic,
-								Color = col,
-								Description = desc,
-								Name = title,
-								Price = price,
-								CategoryPath = cat,
-								Size = size,
-								Photos = phs,
-							});
 
-							countRequest++;
-							//}
-							//catch (Exception ex) { }
-						}
+                    products.Add(new Product()
+                    {
+                        Url = res,
+                        Article = artic,
+                        Color = col,
+                        Description = desc,
+                        Name = title,
+                        Price = price,
+                        CategoryPath = cat,
+                        Size = size,
+                        Photos = phs,
+                    });
 
-					}
-					Helpers.SaveToFile(products, path.Text + @"\Gap.xlsx");
-					StatusStrip("Gap");
-				}
+                    countRequest++;
+                    //}
+                    //catch (Exception ex) { }
+                }
+
+            }
+            Helpers.SaveToFile(products, path.Text + @"\Gap.xlsx");
+            StatusStrip("Gap");
+        }
 
         private void GetAlltextile(IEnumerable<Category> list)
         {
@@ -643,12 +643,12 @@ namespace ParserCatalog
                 {
                     //try
                     //{
-										//if (countRequest % 4 == 0)
-										//{
-										//		Thread.Sleep(7000);
-										//}
+                    //if (countRequest % 4 == 0)
+                    //{
+                    //		Thread.Sleep(7000);
+                    //}
 
-										var doc2 = Helpers.GetHtmlDocument(res, catalog.Url, null, cook);
+                    var doc2 = Helpers.GetHtmlDocument(res, catalog.Url, null, cook);
                     if (doc2 == null)
                         continue;
                     var col = "";
@@ -662,21 +662,21 @@ namespace ParserCatalog
                     desc = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), 'content_area')]/p", "", null);
                     if (string.IsNullOrEmpty(artic))
                         artic = title;
-										phs = Helpers.GetPhoto(doc2, "//a[contains(concat(' ', @class, ' '), 'MagicZoomPlus')]", "//div[contains(concat(' ', @class, ' '), 'content_carousel')]/ul/li/a/img", "http://www.amway.ru", "http://www.amway.ru");
+                    phs = Helpers.GetPhoto(doc2, "//a[contains(concat(' ', @class, ' '), 'MagicZoomPlus')]", "//div[contains(concat(' ', @class, ' '), 'content_carousel')]/ul/li/a/img", "http://www.amway.ru", "http://www.amway.ru");
                     cat = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), 'breadcrumb')]/a", "", new List<string>() { "На главную" }, "/");
                     var status = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), 'text_big')]/a", "Временно отсутствующая", null);
                     var count = Helpers.GetPhoto(doc2, "", "//span[contains(concat(' ', @class, ' '), 'img_wrapper')]/img", "", "http://www.amway.ru");
-										phs = new HashSet<string>(phs.Select(x => x.Replace("_mini_", "_max_"))).ToList();
-										if (count.Any())
+                    phs = new HashSet<string>(phs.Select(x => x.Replace("_mini_", "_max_"))).ToList();
+                    if (count.Any())
                     {
-											var stt=doc2.DocumentNode.InnerHtml.Substring(doc2.DocumentNode.InnerHtml.IndexOf("variantNames"));
-											var reg = Regex.Matches(stt, @"variantSkus\[(\d*)\]='\w*'").Cast<Match>().Select(m => m.Value.Substring(m.Value.IndexOf("=")+1).Replace("'","")).ToList();
-											var title2 = Regex.Matches(stt, @"variantNames\[(\d*)\]='\w*|[А-ЯЁ][а-яё]*'").Cast<Match>().Select(m => m.Value.Substring(m.Value.IndexOf("=") + 1).Replace("'", "")).ToList();
-											
-											var price2 = Helpers.GetItemsInnerTextList(doc2, "//span[contains(concat(' ', @class, ' '), 'nowrap')]", "", null, null);
+                        var stt = doc2.DocumentNode.InnerHtml.Substring(doc2.DocumentNode.InnerHtml.IndexOf("variantNames"));
+                        var reg = Regex.Matches(stt, @"variantSkus\[(\d*)\]='\w*'").Cast<Match>().Select(m => m.Value.Substring(m.Value.IndexOf("=") + 1).Replace("'", "")).ToList();
+                        var title2 = Regex.Matches(stt, @"variantNames\[(\d*)\]='\w*|[А-ЯЁ][а-яё]*'").Cast<Match>().Select(m => m.Value.Substring(m.Value.IndexOf("=") + 1).Replace("'", "")).ToList();
+
+                        var price2 = Helpers.GetItemsInnerTextList(doc2, "//span[contains(concat(' ', @class, ' '), 'nowrap')]", "", null, null);
                         price2 = price2.Select(x => x.Replace("RUR", "").Trim()).ToList();
                         phs.AddRange(count);
-											 title+="-";
+                        title += "-";
                         for (int i = 0; i < reg.Count; i++)
                         {
                             products.Add(new Product()
@@ -685,7 +685,7 @@ namespace ParserCatalog
                                 Article = reg[i],
                                 Color = col,
                                 Description = desc,
-                                Name = title+title2[i],
+                                Name = title + title2[i],
                                 Price = price2[i],
                                 CategoryPath = cat,
                                 Size = size,
@@ -695,7 +695,7 @@ namespace ParserCatalog
                             phs = new List<string>();
                             title = "";
                             desc = "";
-														cat = "";
+                            cat = "";
                         }
                     }
                     else
