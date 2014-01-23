@@ -16,6 +16,9 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using WatiN.Core;
 using Form = System.Windows.Forms.Form;
+using org.openqa.selenium;
+using org.openqa.selenium.firefox;
+using org.openqa.selenium.htmlunit;
 
 namespace ParserCatalog
 {
@@ -408,15 +411,47 @@ namespace ParserCatalog
             {
                 var prod = Helpers.GetProductLinks2(catalog.Url, cook, "http://www.gap.com",
                                 "//a[contains(concat(' ', @class, ' '), 'category')]","","#pageId=", null);
+								
                 if (prod.Count > 0)
                 {
                     var temp = new List<string>();
+										var driver = new FirefoxDriver();
                     foreach (var cat in prod)
                     {
-                        var t1 = Helpers.GetProductLinks(cat, cook, "http://www.gap.com",
-                                "//a[contains(concat(' ', @class, ' '), 'productItemName')]", null);
-                        temp.AddRange(t1);
+											
+											driver.get(cat);
+											Thread.Sleep(1000);
+											var links = driver.findElements(By.xpath("//a"));
+											var links2 = driver.findElements(By.xpath("//a[contains(concat(' ', @class, ' '), 'productItemName')]"));
+											for (int j = 0; j < links2.size(); j++)
+											{
+												var t1=((WebElement)links2.get(j)).getAttribute("href");
+												if (t1.Contains("oid="))
+												{
+													driver.get(t1);
+													Thread.Sleep(1000);
+													var button = driver.findElements(By.xpath("//span[contains(concat(' ', @class, ' '), 'priceDisplay')]"));
+													for (var i = 0; i < button.size(); i++)
+													{
+														Thread.Sleep(1000);
+														var button2 = driver.findElements(By.xpath("//span[contains(concat(' ', @class, ' '), 'priceDisplay')]"));
+														((WebElement)button2.get(i)).click();
+														var newLink = driver.findElement(By.xpath("//img[contains(concat(' ', @id, ' '), 'outfit_product_image')]"));
+														newLink.click();
+														Thread.Sleep(1000);
+														temp.Add(driver.getCurrentUrl());
+														driver.navigate().back();
+														Thread.Sleep(500);
+													}
+													//span priceDisplay
+												}else
+													temp.Add(t1);
+											}
+												//var t1 = Helpers.GetProductLinks(cat, cook, "http://www.gap.com",
+												//				"//a[contains(concat(' ', @class, ' '), 'productItemName')]", null);
+                        
                     }
+										driver.close();
                     prod = new HashSet<string>(temp);
                 }
                 else
