@@ -14,6 +14,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using org.openqa.selenium.support.ui;
 using WatiN.Core;
 using Form = System.Windows.Forms.Form;
 using org.openqa.selenium;
@@ -410,52 +411,118 @@ namespace ParserCatalog
             foreach (var catalog in list)
             {
                 var prod = Helpers.GetProductLinks2(catalog.Url, cook, "http://www.gap.com",
-                                "//a[contains(concat(' ', @class, ' '), 'category')]","","#pageId=", null);
-								
-                if (prod.Count > 0)
+                                "//a[contains(concat(' ', @class, ' '), 'category')]", "", "#pageId=", null);
+                prod=new HashSet<string>();
+                prod.Add("http://www.gap.com/browse/product.do?cid=94954&pid=928910");
+                if (prod.Count > 100)
                 {
                     var temp = new List<string>();
-										var driver = new FirefoxDriver();
+                    var driver = new FirefoxDriver();
                     foreach (var cat in prod)
                     {
-											
-											driver.get(cat);
-											Thread.Sleep(1000);
-											var links = driver.findElements(By.xpath("//a"));
-											var links2 = driver.findElements(By.xpath("//a[contains(concat(' ', @class, ' '), 'productItemName')]"));
-											for (int j = 0; j < links2.size(); j++)
-											{
-												var t1=((WebElement)links2.get(j)).getAttribute("href");
-												if (t1.Contains("oid="))
-												{
-													driver.get(t1);
-													Thread.Sleep(1000);
-													var button = driver.findElements(By.xpath("//span[contains(concat(' ', @class, ' '), 'priceDisplay')]"));
-													for (var i = 0; i < button.size(); i++)
-													{
-														Thread.Sleep(1000);
-														var button2 = driver.findElements(By.xpath("//span[contains(concat(' ', @class, ' '), 'priceDisplay')]"));
-														((WebElement)button2.get(i)).click();
-														var newLink = driver.findElement(By.xpath("//img[contains(concat(' ', @id, ' '), 'outfit_product_image')]"));
-														newLink.click();
-														Thread.Sleep(1000);
-														temp.Add(driver.getCurrentUrl());
-														driver.navigate().back();
-														Thread.Sleep(500);
-													}
-													//span priceDisplay
-												}else
-													temp.Add(t1);
-											}
-												//var t1 = Helpers.GetProductLinks(cat, cook, "http://www.gap.com",
-												//				"//a[contains(concat(' ', @class, ' '), 'productItemName')]", null);
+                        driver.get(cat);
+                        var el=findDynamicElement(driver, By.xpath("//a[contains(concat(' ', @class, ' '), 'productItemName')][1]"),5);
+                        if(el==false)
+                            continue;
+                        var links2 = driver.findElements(By.xpath("//a[contains(concat(' ', @class, ' '), 'productItemName')]"));
+                        for (int j = 0; j < links2.size(); j++)
+                        {
+                            //Thread.Sleep(800);
+                            findDynamicElement(driver,
+                                By.xpath("//a[contains(concat(' ', @class, ' '), 'productItemName')][1]"), 10);
+                            var links22 =
+                                driver.findElements(
+                                    By.xpath("//a[contains(concat(' ', @class, ' '), 'productItemName')]"));
+                            if (links22.size() < links2.size())
+                            {
+                                findDynamicElement(driver,
+                                    By.xpath("//a[contains(concat(' ', @class, ' '), 'productItemName')][1]"), 5);
+                                links22 =
+                                    driver.findElements(
+                                        By.xpath("//a[contains(concat(' ', @class, ' '), 'productItemName')]"));
+                            }
+                            var t1 = ((WebElement) links22.get(j)).getAttribute("href");
+                            if (t1.Contains("oid="))
+                            {
+                                driver.get(t1);
+                                findDynamicElement(driver,
+                                    By.xpath("//div[contains(concat(' ', @id, ' '), 'outfitImages')]"), 5);
+                                var html = driver.getPageSource();
+                                var reg =
+                                    Regex.Matches(html, "strProductId: \"\\w*\"")
+                                        .Cast<Match>()
+                                        .Select(m => m.Value.Substring(m.Value.IndexOf("\"") + 1).Replace("\"", ""))
+                                        .ToList();
+                                var link = driver.getCurrentUrl();
+                                link = link.Replace("outfit.do", "product.do");
+                                link = link.Remove(link.IndexOf("&oid"));
+                                temp.AddRange(reg.Select(r => link + "&pid=" + r));
+                                driver.navigate().back();
+                            }
+                            else
+                                temp.Add(t1);
+                        }
+                        var page = driver.findElement(By.xpath("//a[contains(concat(' ', @title, ' '), 'Next page')]"));
+                        if (page != null)
+                        {
+                            try
+                            {
+                                page.click();
+                            }
+                            catch (Exception ex)
+                            {
+                                continue;
+                            }
+                            findDynamicElement(driver, By.xpath("//a[contains(concat(' ', @class, ' '), 'productItemName')][1]"), 5);
+                            var links3 = driver.findElements(By.xpath("//a[contains(concat(' ', @class, ' '), 'productItemName')]"));
+                            for (int j = 0; j < links3.size(); j++)
+                            {
+                                //Thread.Sleep(800);
+                                findDynamicElement(driver,
+                                    By.xpath("//a[contains(concat(' ', @class, ' '), 'productItemName')][1]"), 5);
+                                var links22 =
+                                    driver.findElements(
+                                        By.xpath("//a[contains(concat(' ', @class, ' '), 'productItemName')]"));
+                                if (links22.size() < links3.size())
+                                {
+                                    findDynamicElement(driver,
+                                        By.xpath("//a[contains(concat(' ', @class, ' '), 'productItemName')][1]"), 5);
+                                    links22 =
+                                        driver.findElements(
+                                            By.xpath("//a[contains(concat(' ', @class, ' '), 'productItemName')]"));
+                                }
+                                var t1 = ((WebElement)links22.get(j)).getAttribute("href");
+                                if (t1.Contains("oid="))
+                                {
+                                    driver.get(t1);
+                                    findDynamicElement(driver,
+                                        By.xpath("//div[contains(concat(' ', @id, ' '), 'outfitImages')]"), 5);
+                                    var html = driver.getPageSource();
+                                    var reg =
+                                        Regex.Matches(html, "strProductId: \"\\w*\"")
+                                            .Cast<Match>()
+                                            .Select(m => m.Value.Substring(m.Value.IndexOf("\"") + 1).Replace("\"", ""))
+                                            .ToList();
+                                    var link = driver.getCurrentUrl();
+                                    link = link.Replace("outfit.do", "product.do");
+                                    link = link.Remove(link.IndexOf("&oid"));
+                                    temp.AddRange(reg.Select(r => link + "&pid=" + r));
+                                    driver.navigate().back();
+                                }
+                                else
+                                    temp.Add(t1);
+                            }
+                        }
                         
+                        //var t1 = Helpers.GetProductLinks(cat, cook, "http://www.gap.com",
+                        //				"//a[contains(concat(' ', @class, ' '), 'productItemName')]", null);
+
                     }
-										driver.close();
+                    driver.close();
                     prod = new HashSet<string>(temp);
                 }
-                else
-                    continue;
+                //else
+                //    continue;
 
                 int countRequest = 0;
                 foreach (var res in prod)
@@ -466,8 +533,10 @@ namespace ParserCatalog
                     //{
                     //	Thread.Sleep(7000);
                     //}
-
-                    var doc2 = Helpers.GetHtmlDocument(res, catalog.Url, null, cook);
+                    var dr = new FirefoxDriver();
+                    dr.get(res.Replace("www", "m"));
+                    var ttt = dr.getPageSource();
+                    var doc2 = Helpers.GetHtmlDocument(res.Replace("www","m"), catalog.Url, null, cook);
                     if (doc2 == null)
                         continue;
                     var col = "";
@@ -6508,7 +6577,19 @@ namespace ParserCatalog
         //    Start.Enabled = true;
         //    button1.Text = "Проверить сайты на доступность";
         //}
-
+        public static bool findDynamicElement(WebDriver dr,By by, int timeOut)
+        {
+            try
+            {
+                WebDriverWait wait = new WebDriverWait(dr, timeOut);
+                wait.until(ExpectedConditions.visibilityOfElementLocated(by));
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+        }
     }
 }
 
