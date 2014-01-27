@@ -308,6 +308,16 @@ namespace ParserCatalog
                                 temp.Add(new Category() { Name = cat.InnerText, Url = url });
                             else
                                 temp.Add(new Category() { Name = cat.InnerText, Url = shopBig.Host + url });
+                        } else if (shopBig.Url.Contains("oldnavy"))
+                        {
+                            var url = cat.Attributes["href"].Value;
+                            var name = cat.Attributes["title"].Value;
+                            if (shopBig.Host == null || string.IsNullOrEmpty(shopBig.Host))
+                                shopBig.Host = shopBig.Url;
+                            if (url.Contains(shopBig.Host))
+                                temp.Add(new Category() { Name = name, Url = url });
+                            else
+                                temp.Add(new Category() { Name =name, Url = shopBig.Host + url });
                         }
                     }
                     shopBig.CatalogList = temp;

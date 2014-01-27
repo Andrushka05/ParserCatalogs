@@ -38,6 +38,7 @@
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.timeStripStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.countStripStatus = new System.Windows.Forms.ToolStripStatusLabel();
+            this.btnCancel = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -130,6 +131,19 @@
             this.countStripStatus.Name = "countStripStatus";
             this.countStripStatus.Size = new System.Drawing.Size(0, 17);
             // 
+            // btnCancel
+            // 
+            this.btnCancel.Enabled = false;
+            this.btnCancel.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.btnCancel.Location = new System.Drawing.Point(78, 216);
+            this.btnCancel.Name = "btnCancel";
+            this.btnCancel.Size = new System.Drawing.Size(142, 37);
+            this.btnCancel.TabIndex = 8;
+            this.btnCancel.Text = "Отмена";
+            this.btnCancel.UseVisualStyleBackColor = true;
+            this.btnCancel.Visible = false;
+            this.btnCancel.Click += new System.EventHandler(this.btnCancel_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -139,10 +153,12 @@
             this.Controls.Add(this.photoCheck);
             this.Controls.Add(this.treeView1);
             this.Controls.Add(this.label2);
+            this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.Start);
             this.Controls.Add(this.groupBox1);
             this.Name = "Form1";
             this.Text = "ParserCatalog";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
@@ -165,6 +181,7 @@
         private System.Windows.Forms.StatusStrip statusStrip1;
         private System.Windows.Forms.ToolStripStatusLabel timeStripStatus;
         private System.Windows.Forms.ToolStripStatusLabel countStripStatus;
+        private System.Windows.Forms.Button btnCancel;
     }
 }
 
