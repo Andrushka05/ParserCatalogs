@@ -107,6 +107,8 @@ namespace ParserCatalog
 			shops.Add(new Shop() { Name = "Alltextile", Url = "http://alltextile.info" });
 			shops.Add(new Shop() { Name = "Limoni", Url = "http://www.limoni.ru/kupit-v-roznicu/store/" });
 
+		    shops = shops.OrderBy(x => x.Name).ToList();
+
 			Start.Enabled = false;
 			Open.Enabled = false;
 			Start.Text = "Подождите...";
@@ -181,6 +183,7 @@ namespace ParserCatalog
 			var pars = new List<Site>();
 			var leggi = new List<string>();
 			treeView1.SuspendLayout();
+            cancel=new CancellationTokenSource();
 			foreach (TreeNode aNode in treeView1.Nodes)
 			{
 				var t1 = new List<Category>();
@@ -213,8 +216,8 @@ namespace ParserCatalog
 
 			Parallel.ForEach(pars,new ParallelOptions(){ CancellationToken=cancel.Token}, site =>
 			{
-				//try
-				//{
+				try
+				{
 				var cL = new List<Category>();
 				var shopUrl = site.Categories[0].Url;
 				if (!site.Catalog)
@@ -429,15 +432,15 @@ namespace ParserCatalog
 					Thread.Sleep(60000);
 					GetOldnavy(cL);
 				}
-				//else if (shopUrl.Contains("alltextile"))
-				//    GetAlltextile(cL);
+                else if (shopUrl.Contains("limoni"))
+                    GetLimoni(cL);
 
 				stL.Add(st.Elapsed.ToString());
-				//}
-				//catch (Exception ex)
-				//{
-				//	errors.Add(site.Name + " - Ошибка: " + ex.Message);
-				//}
+                }
+                catch (Exception ex)
+                {
+                    errors.Add(site.Name + " - Ошибка: " + ex.Message);
+                }
 			});
 			timeStripStatus.Text = "Время парсинга " + st.Elapsed;
 			countStripStatus.Text = "Загружено " + (pars.Count - errors.Count - 1) + " из " + pars.Count;
@@ -470,8 +473,73 @@ namespace ParserCatalog
 			bwMain.DoWork += bw_Parsing;
 			bwMain.RunWorkerAsync();
 		}
+        private void GetLimoni(IEnumerable<Category> list)
+        {
+            var products = new List<Product>();
+            var cook = Helpers.GetCookiePost("http://www.limoni.ru/", new NameValueCollection());
 
-		private void GetOldnavy(IEnumerable<Category> list)
+            foreach (var catalog in list)
+            {
+                var prod = Helpers.GetProductLinks2(catalog.Url, cook, "http://www.limoni.ru",
+                                "//div[contains(concat(' ', @class, ' '), 'ecwid-productBrowser-productNameLink')]/a", "//span[contains(concat(' ', @class, ' '), 'ecwid-pager-link')][l","", null);
+
+                if (prod.Count == 0)
+                    continue;
+
+                int countRequest = 0;
+                foreach (var res in prod)
+                {
+                    //try
+                    //{
+                    //if (countRequest % 4 == 0)
+                    //{
+                    //	Thread.Sleep(7000);
+                    //}
+
+                    var doc2 = Helpers.GetHtmlDocument(res, catalog.Url, null, cook);
+                    if (doc2 == null)
+                        continue;
+                    var col = "";
+                    var size = "";
+                    var desc = "";
+                    var cat = "";
+                    var artic = "";
+                    var phs = new List<string>();
+                    var title = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @class, ' '), 'ecwid-productBrowser-head')]");
+                    artic = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @class, ' '), 'ecwid-productBrowser-sku')]").Replace("Артикул","").Trim();
+                    var price = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @class, ' '), 'ecwid-productBrowser-price')]").Replace("р","").Trim();
+                    desc = Helpers.GetItemsInnerText(doc2,"//div[contains(concat(' ', @class, ' '), 'gwt-HTML')]/p","",null);
+                    if (string.IsNullOrEmpty(artic))
+                        artic = title;
+                    phs = Helpers.GetPhoto(doc2, "//a[contains(concat(' ', @class, ' '), 'highslide')]");
+                    cat = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), 'ecwid-productBrowser-categoryPath-categoryLink')]/a","",new List<string>(){"Магазин"},"/");
+                    var st = Helpers.GetItemInnerText(doc2,
+                        "//div[contains(concat(' ', @class, ' '), 'ecwid-productBrowser-details-inStockLabel')]");
+
+                    products.Add(new Product()
+                    {
+                        Url = res,
+                        Article = artic,
+                        Color = col,
+                        Description = desc,
+                        Name = title,
+                        Price = price,
+                        CategoryPath = cat,
+                        Size = size,
+                        Photos = phs,
+                        state = !st.Contains("В наличии")?"no_sale":""
+                    });
+
+                    countRequest++;
+                    //}
+                    //catch (Exception ex) { }
+                }
+
+            }
+            Helpers.SaveToFile(products, path.Text + @"\Alltextile.xlsx", false, false, false);
+            StatusStrip("Alltextile");
+        }
+        private void GetOldnavy(IEnumerable<Category> list)
 		{
 
 			var cook = Helpers.GetCookiePost("http://oldnavy.gap.com/", new NameValueCollection());
@@ -772,11 +840,9 @@ namespace ParserCatalog
 
 			StatusStrip("Oldnavy");
 		}
-
-		private void GetOshkosh(IEnumerable<Category> list)
+        private void GetOshkosh(IEnumerable<Category> list)
 		{
-
-			var cook = Helpers.GetCookiePost("http://www.oshkosh.com/", new NameValueCollection());
+            var cook = Helpers.GetCookiePost("http://www.oshkosh.com/", new NameValueCollection());
 
 			foreach (var catalog in list)
 			{
@@ -791,6 +857,7 @@ namespace ParserCatalog
 					var temp = new List<string>();
 					foreach (var cat in prod)
 					{
+                        try{
 						var c = cat.Replace("http://www.oshkosh.com/", "");
 						c = c.Remove(c.IndexOf("?"));
 						var doc = Helpers.GetHtmlDocument(cat, "http://www.oshkosh.com/", null, cook);
@@ -817,7 +884,18 @@ namespace ParserCatalog
 						if (!tr.Contains("http://www.oshkosh.com"))
 							tr = tr.Select(x => "http://www.oshkosh.com" + x).ToList();
 						if (tr.Any())
-							temp.AddRange(tr);
+                            temp.AddRange(tr);
+                        }
+                        catch (Exception ex)
+                        {
+                            try
+                            {
+                                html.Close();
+                            }
+                            catch (Exception z) { }
+                            Thread.Sleep(50000);
+                            html = new FirefoxDriver();
+                        }
 					}
 					html.Close();
 					listBrowsers.Remove(html);
@@ -882,8 +960,7 @@ namespace ParserCatalog
 
 			StatusStrip("Oshkosh");
 		}
-
-		private void GetCarters(IEnumerable<Category> list)
+        private void GetCarters(IEnumerable<Category> list)
 		{
 
 			var cook = Helpers.GetCookiePost("http://www.carters.com/", new NameValueCollection());
@@ -901,31 +978,46 @@ namespace ParserCatalog
 					var temp = new List<string>();
 					foreach (var cat in prod)
 					{
-						var c = cat.Replace("http://www.carters.com/", "");
-						c = c.Remove(c.IndexOf("?"));
-						var doc = Helpers.GetHtmlDocument(cat, "http://www.carters.com/", null, cook);
+					    try
+					    {
+					        var c = cat.Replace("http://www.carters.com/", "");
+					        c = c.Remove(c.IndexOf("?"));
+					        var doc = Helpers.GetHtmlDocument(cat, "http://www.carters.com/", null, cook);
 
-						html.Navigate().GoToUrl(cat);
-						FindDynamicElement(html, By.XPath("//div[contains(concat(' ', @class, ' '), 'results-hits')]/span/a"), 5);
-						try
-						{
-							var link =
-									html.FindElement(
-											By.XPath("//div[contains(concat(' ', @class, ' '), 'results-hits')]/span/a"));
-							link.Click();
-						}
-						catch (Exception ex) { }
-						FindDynamicElement(html, By.XPath("//a[contains(concat(' ', @class, ' '), 'name-link')][last()]"), 5);
-						Thread.Sleep(1000);
-						var source = html.PageSource;
-						doc.LoadHtml(source);
-						var tr = Helpers.GetItemsAttributtList(doc, "//a[contains(concat(' ', @class, ' '), 'name-link')]", "", "href", null, null);
-						if (!tr.Contains("http://www.carters.com"))
-							tr = tr.Select(x => "http://www.carters.com" + x).ToList();
-						//var tr=Helpers.GetProductLinks2(cat, cook, "http://www.carters.com",
-						//        "//a[contains(concat(' ', @class, ' '), 'name-link')]", "//div[contains(concat(' ', @class, ' '), 'pagination-temp')]/a[last()]", null);
-						if (tr.Any())
-							temp.AddRange(tr);
+					        html.Navigate().GoToUrl(cat);
+					        FindDynamicElement(html, By.XPath("//div[contains(concat(' ', @class, ' '), 'results-hits')]/span/a"), 5);
+					        try
+					        {
+					            var link =
+					                html.FindElement(
+					                    By.XPath("//div[contains(concat(' ', @class, ' '), 'results-hits')]/span/a"));
+					            link.Click();
+					        }
+					        catch (Exception ex)
+					        {
+					        }
+					        FindDynamicElement(html, By.XPath("//a[contains(concat(' ', @class, ' '), 'name-link')][last()]"), 5);
+					        Thread.Sleep(1000);
+					        var source = html.PageSource;
+					        doc.LoadHtml(source);
+					        var tr = Helpers.GetItemsAttributtList(doc, "//a[contains(concat(' ', @class, ' '), 'name-link')]", "",
+					            "href", null, null);
+					        if (!tr.Contains("http://www.carters.com"))
+					            tr = tr.Select(x => "http://www.carters.com" + x).ToList();
+					        //var tr=Helpers.GetProductLinks2(cat, cook, "http://www.carters.com",
+					        //        "//a[contains(concat(' ', @class, ' '), 'name-link')]", "//div[contains(concat(' ', @class, ' '), 'pagination-temp')]/a[last()]", null);
+					        if (tr.Any())
+					            temp.AddRange(tr);
+					    }
+					    catch (Exception ex)
+					    {
+					        try
+					        {
+					            html.Close();
+					        }catch(Exception z){}
+                            Thread.Sleep(50000);
+                            html=new FirefoxDriver();
+					    }
 					}
 					html.Close();
 					listBrowsers.Remove(html);
@@ -990,8 +1082,7 @@ namespace ParserCatalog
 
 			StatusStrip("Carters");
 		}
-
-		private void GetGap(IEnumerable<Category> list)
+        private void GetGap(IEnumerable<Category> list)
 		{
 
 			var cook = Helpers.GetCookiePost("http://www.gap.com/", new NameValueCollection());
