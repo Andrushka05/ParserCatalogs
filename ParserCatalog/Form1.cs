@@ -216,8 +216,8 @@ namespace ParserCatalog
 
 			Parallel.ForEach(pars, new ParallelOptions() { CancellationToken = cancel.Token }, site =>
 			{
-				try
-				{
+                //try
+                //{
 					var cL = new List<Category>();
 					var shopUrl = site.Categories[0].Url;
 					if (!site.Catalog)
@@ -441,18 +441,18 @@ namespace ParserCatalog
 					}
 					else if (shopUrl.Contains("oldnavy"))
 					{
-						Thread.Sleep(60000);
+                        //Thread.Sleep(60000);
 						GetOldnavy(cL);
 					}
 					else if (shopUrl.Contains("limoni"))
 						GetLimoni(cL);
 
 					stL.Add(st.Elapsed.ToString());
-				}
-				catch (Exception ex)
-				{
-					errors.Add(site.Name + " - Ошибка: " + ex.Message);
-				}
+                //}
+                //catch (Exception ex)
+                //{
+                //    errors.Add(site.Name + " - Ошибка: " + ex.Message);
+                //}
 			});
 			timeStripStatus.Text = "Время парсинга " + st.Elapsed;
 			countStripStatus.Text = "Загружено " + (pars.Count - errors.Count - 1) + " из " + pars.Count;
@@ -529,7 +529,6 @@ namespace ParserCatalog
 													"//div[contains(concat(' ', @class, ' '), 'ecwid-productBrowser-productNameLink')]/a", null);
 						if (tr.Any() && (lastCount != tr.Count || tr.Count == 9))
 							temp.AddRange(tr);
-						else
 							break;
 					}
 					temp.AddRange(prod);
@@ -608,12 +607,39 @@ namespace ParserCatalog
 				if (prod.Count > 0)
 				{
 					var temp = new List<string>();
-										
+				    var gg = 0;		
 					foreach (var cat in prod)
 					{
-						driver.Navigate().GoToUrl(cat);
-						Thread.Sleep(1000);
-						var source = driver.PageSource;
+					    if (gg%3 == 0&&gg!=0)
+					    {
+                            driver.Close();
+                            Thread.Sleep(3000);
+					        driver = new FirefoxDriver();
+					    }
+                        gg++;
+					    try
+					    {
+					        //driver.Manage().Timeouts().SetScriptTimeout(TimeSpan.FromSeconds(10));
+					       // driver.Manage().Timeouts().SetPageLoadTimeout(TimeSpan.FromSeconds(15));
+                           // Thread.Sleep(2000);
+					        driver.Navigate().GoToUrl(cat);
+                           // Thread.Sleep(10000);
+                            FindDynamicElement(driver, By.ClassName("productItemName"), 10);
+                            Thread.Sleep(1500);
+					        driver.FindElement(By.Id("totalItemCountDivSB")).Click();
+					    }
+					    catch (Exception ex)
+					    {
+					        try
+					        {
+					            driver.Close();
+					        }catch(Exception e){}
+                            driver=new FirefoxDriver();
+                            driver.Navigate().GoToUrl(cat);
+                            FindDynamicElement(driver, By.Id("totalItemCountDivSB"), 10);
+                            driver.FindElement(By.Id("totalItemCountDivSB")).Click();
+					    }
+					    var source = driver.PageSource;
 						var doc = new HtmlAgilityPack.HtmlDocument();
 						doc.LoadHtml(source);
 						var pagesLink = Helpers.GetItemsAttributtList(doc, "//a[contains(concat(' ', @class, ' '), 'productItemName')]", "", "href", null, null);
@@ -653,12 +679,14 @@ namespace ParserCatalog
 							{
 								try
 								{
-									page.Click();
+                                    driver.FindElement(By.XPath("//a[contains(concat(' ', @title, ' '), 'Next page')]")).Click();
 								}
 								catch (Exception ex)
 								{
+                                    Thread.Sleep(1000);
+                                    driver.Navigate().Back();
 									continue;
-								}
+                                }
 								Thread.Sleep(1000);
 								source = driver.PageSource;
 								doc = new HtmlAgilityPack.HtmlDocument();
@@ -692,18 +720,19 @@ namespace ParserCatalog
 								Thread.Sleep(1000);
 								driver.Navigate().GoToUrl(cat);
 								FindDynamicElement(driver, By.XPath("//a[contains(concat(' ', @title, ' '), 'Next page')]"), 5);
-								page = driver.FindElement(By.XPath("//a[contains(concat(' ', @title, ' '), 'Next page')]"));
+								
 								bool p2 = false;
 								try
 								{
-									page.Click();
+                                    driver.FindElement(By.XPath("//a[contains(concat(' ', @title, ' '), 'Next page')]")).Click();
 									Thread.Sleep(1000);
-									var page2 = driver.FindElement(By.XPath("//a[contains(concat(' ', @title, ' '), 'Next page')]"));
-									page2.Click();
+									driver.FindElement(By.XPath("//a[contains(concat(' ', @title, ' '), 'Next page')]")).Click();
 									p2 = true;
 								}
 								catch (Exception ex)
 								{
+                                    Thread.Sleep(1000);
+                                    driver.Navigate().Back();
 									continue;
 								}
 								if (p2)
@@ -745,13 +774,14 @@ namespace ParserCatalog
 						{
 
 						}
+					    
 					}
 					prod = new HashSet<string>(temp);
 				}
 				else
 					continue;
 				driver.Manage().Timeouts().SetPageLoadTimeout(TimeSpan.FromMinutes(1));
-				driver.Manage().Timeouts().SetScriptTimeout(TimeSpan.FromSeconds(5));
+				driver.Manage().Timeouts().SetScriptTimeout(TimeSpan.FromSeconds(10));
 				int countRequest = 0;
 				foreach (var res in prod)
 				{
@@ -764,65 +794,70 @@ namespace ParserCatalog
 						var phs = new List<string>();
 						for (var i = 0; i < images; i++)
 						{
-							try
-							{
-								FindDynamicElement(driver,
-										By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]"), 5);
-								//var images2 =
-										driver.FindElements(By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]"))[i].Click();
-								//var img = images2[i];
-								//img.Click();
-								driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
-								driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
-								
-								var pathImg =
-										driver.FindElement(By.XPath("//img[contains(concat(' ', @id, ' '), 'zoomImg')]"))
-												.GetAttribute("src");
-								phs.Add(pathImg);
-							}catch(Exception ex){}
+						    try
+						    {
+						        FindDynamicElement(driver,
+						            By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]"), 5);
+						        //var images2 =
+						        driver.FindElements(By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]"))[i].Click();
+						        //var img = images2[i];
+						        //img.Click();
+						        driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
+						        driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
+
+						        var pathImg =
+						            driver.FindElement(By.XPath("//img[contains(concat(' ', @id, ' '), 'zoomImg')]"))
+						                .GetAttribute("src");
+						        phs.Add(pathImg);
+						    }
+						    catch (Exception ex)
+						    {
+						        
+						    }
 						}
 						var imagCol =	driver.FindElements(By.XPath("//input[contains(concat(' ', @id, ' '), 'colorSwatch')]")).Count;
 						for (var i = 1; i < imagCol && imagCol > 1; i++)
 						{
-							try
-							{
-								FindDynamicElement(driver,By.XPath("//input[contains(concat(' ', @id, ' '), 'colorSwatch')]"), 5);
-								//var images2 =
-										driver.FindElements(By.XPath("//input[contains(concat(' ', @id, ' '), 'colorSwatch')]"))[i].Click();
-								//var img = images2[i];
-								//img.Click();
-								try
-								{
-									driver.FindElement(By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]")).Click();
-								}
-								catch (Exception ex)
-								{
-								}
-								driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
-								driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
-								var text =
-										driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'textColor')]")).Text;
-								if (text.Length > 0)
-									col += text.Trim() + "; ";
-								var pathImg =
-										driver.FindElement(By.XPath("//img[contains(concat(' ', @id, ' '), 'zoomImg')]"))
-												.GetAttribute("src");
-								phs.Add(pathImg);
-							}
-							catch (Exception ex) { }
+						    try
+						    {
+						        FindDynamicElement(driver, By.XPath("//input[contains(concat(' ', @id, ' '), 'colorSwatch')]"), 5);
+						        //var images2 =
+						        driver.FindElements(By.XPath("//input[contains(concat(' ', @id, ' '), 'colorSwatch')]"))[i].Click();
+						        //var img = images2[i];
+						        //img.Click();
+						        try
+						        {
+						            driver.FindElement(By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]")).Click();
+						        }
+						        catch (Exception ex)
+						        {
+						        }
+						        driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
+						        driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
+						        var text =
+						            driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'textColor')]")).Text;
+						        if (text.Length > 0)
+						            col += text.Trim() + "; ";
+						        var pathImg =
+						            driver.FindElement(By.XPath("//img[contains(concat(' ', @id, ' '), 'zoomImg')]"))
+						                .GetAttribute("src");
+						        phs.Add(pathImg);
+						    }
+						    catch (Exception ex)
+						    {
+						        
+						    }
 						}
-						if (phs.Count == 0)
-						{
-							var div = driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]"));
-							div.Click();
-							div = driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]"));
-							div.Click();
-							var pathImg =
-									driver.FindElement(By.XPath("//img[contains(concat(' ', @id, ' '), 'zoomImg')]"))
-											.GetAttribute("src");
-							phs.Add(pathImg);
-						}
-						var ttt = driver.PageSource;
+					    try
+					    {
+					        driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
+					        driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
+					        var img =
+					            driver.FindElement(By.XPath("//img[contains(concat(' ', @id, ' '), 'zoomImg')]"))
+					                .GetAttribute("src");
+					        phs.Add(img);
+					    }catch(Exception ex){}
+					    var ttt = driver.PageSource;
 						var doc2 = new HtmlAgilityPack.HtmlDocument();
 						doc2.LoadHtml(ttt);
 						var size = "";
@@ -832,21 +867,22 @@ namespace ParserCatalog
 
 						var title = Helpers.GetItemInnerText(doc2,
 								"//span[contains(concat(' ', @class, ' '), 'productName')]");
-						artic = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @id, ' '), 'productNumber')]").Replace("prices may vary", "").Trim();
+						artic = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @id, ' '), 'productNumber')]").ToLower().Replace("prices may vary", "").Trim();
 						col +=
 								Helpers.GetItemsInnerText(doc2, "//label[contains(concat(' ', @for, ' '), 'colorSwatch')]",
 										"", null, "; ").Replace("product image", "").Trim();
 						var price =
-								Helpers.GetItemInnerText(doc2, "//span[contains(concat(' ', @id, ' '), 'priceText')]")
+								Helpers.GetItemInnerText(doc2, "//span[contains(concat(' ', @id, ' '), 'priceText')][1]")
 										.Replace("$", "")
 										.Trim();
 						if (price.Trim().Length == 0)
 						{
 							price =
-									Helpers.GetItemInnerText(doc2, "//span[contains(concat(' ', @class, ' '), 'salePrice')]")
+									Helpers.GetItemInnerText(doc2, "//span[contains(concat(' ', @class, ' '), 'salePrice')][1]")
 											.Replace("$", "")
 											.Trim();
 						}
+
 						size =
 								Helpers.GetItemsInnerText(doc2, "//label[contains(concat(' ', @for, ' '), 'size1Swatch')]",
 										"", null, "; ").Replace("Select size", "");
@@ -1211,7 +1247,7 @@ namespace ParserCatalog
 							{
 								try
 								{
-									page.Click();
+                                    driver.FindElement(By.XPath("//a[contains(concat(' ', @title, ' '), 'Next page')]")).Click();
 								}
 								catch (Exception ex)
 								{
@@ -1254,10 +1290,10 @@ namespace ParserCatalog
 								bool p2 = false;
 								try
 								{
-									page.Click();
+                                    driver.FindElement(By.XPath("//a[contains(concat(' ', @title, ' '), 'Next page')]")).Click();
 									Thread.Sleep(1000);
-									var page2 = driver.FindElement(By.XPath("//a[contains(concat(' ', @title, ' '), 'Next page')]"));
-									page2.Click();
+									driver.FindElement(By.XPath("//a[contains(concat(' ', @title, ' '), 'Next page')]")).Click();
+									
 									p2 = true;
 								}
 								catch (Exception ex)
@@ -1308,134 +1344,143 @@ namespace ParserCatalog
 				}
 				else
 					continue;
-				driver.Manage().Timeouts().SetPageLoadTimeout(TimeSpan.FromMinutes(1));
-				driver.Manage().Timeouts().SetScriptTimeout(TimeSpan.FromSeconds(5));
-				int countRequest = 0;
-				foreach (var res in prod)
-				{
-					try
-					{
-						driver.Navigate().GoToUrl(res);
-						
-						var col = "";
-						FindDynamicElement(driver, By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]"), 5);
-						var images = driver.FindElements(By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]"));
-						var phs = new List<string>();
-						for (var i = 0; i < images.Count; i++)
-						{
-							FindDynamicElement(driver, By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]"), 5);
-							var images2 = driver.FindElements(By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]"));
-							var img = images2[i];
-							img.Click();
-							var div = driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]"));
-							div.Click();
-							div = driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]"));
-							div.Click();
-							var pathImg =
-									driver.FindElement(By.XPath("//img[contains(concat(' ', @id, ' '), 'zoomImg')]"))
-											.GetAttribute("src");
-							phs.Add(pathImg);
-						}
-						var imagCol = driver.FindElements(By.XPath("//input[contains(concat(' ', @id, ' '), 'colorSwatch')]"));
-						for (var i = 1; i < imagCol.Count && imagCol.Count > 1; i++)
-						{
-							FindDynamicElement(driver, By.XPath("//input[contains(concat(' ', @id, ' '), 'colorSwatch')]"), 5);
-							var images2 = driver.FindElements(By.XPath("//input[contains(concat(' ', @id, ' '), 'colorSwatch')]"));
-							var img = images2[i];
-							img.Click();
-							try
-							{
-								var images22 = driver.FindElement(By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]"));
-								images22.Click();
-							}
-							catch (Exception ex)
-							{
-							}
+                driver.Manage().Timeouts().SetPageLoadTimeout(TimeSpan.FromMinutes(1));
+                driver.Manage().Timeouts().SetScriptTimeout(TimeSpan.FromSeconds(10));
+                int countRequest = 0;
+                foreach (var res in prod)
+                {
+                    try
+                    {
+                        driver.Navigate().GoToUrl(res);
+                        var col = "";
+                        FindDynamicElement(driver, By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]"), 5);
+                        var images = driver.FindElements(By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]")).Count;
+                        var phs = new List<string>();
+                        for (var i = 0; i < images; i++)
+                        {
+                            try
+                            {
+                                FindDynamicElement(driver,
+                                        By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]"), 5);
+                                //var images2 =
+                                driver.FindElements(By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]"))[i].Click();
+                                //var img = images2[i];
+                                //img.Click();
+                                driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
+                                driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
 
-							var div = driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]"));
-							div.Click();
-							div = driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]"));
-							div.Click();
-							var color = driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'textColor')]"));
-							var text = color.Text;
-							if (text.Length > 0)
-								col += text.Trim() + "; ";
-							var pathImg =
-									driver.FindElement(By.XPath("//img[contains(concat(' ', @id, ' '), 'zoomImg')]"))
-											.GetAttribute("src");
-							phs.Add(pathImg);
-						}
-						if (phs.Count == 0)
-						{
-							var div = driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]"));
-							div.Click();
-							div = driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]"));
-							div.Click();
-							var pathImg =
-									driver.FindElement(By.XPath("//img[contains(concat(' ', @id, ' '), 'zoomImg')]"))
-											.GetAttribute("src");
-							phs.Add(pathImg);
-						}
-						var ttt = driver.PageSource;
-						var doc2 = new HtmlAgilityPack.HtmlDocument();
-						doc2.LoadHtml(ttt);
-						var size = "";
-						var desc = "";
-						var cat = "";
-						var artic = "";
+                                var pathImg =
+                                        driver.FindElement(By.XPath("//img[contains(concat(' ', @id, ' '), 'zoomImg')]"))
+                                                .GetAttribute("src");
+                                phs.Add(pathImg);
+                            }
+                            catch (Exception ex) { }
+                        }
+                        var imagCol = driver.FindElements(By.XPath("//input[contains(concat(' ', @id, ' '), 'colorSwatch')]")).Count;
+                        for (var i = 1; i < imagCol && imagCol > 1; i++)
+                        {
+                            try
+                            {
+                                FindDynamicElement(driver, By.XPath("//input[contains(concat(' ', @id, ' '), 'colorSwatch')]"), 5);
+                                //var images2 =
+                                driver.FindElements(By.XPath("//input[contains(concat(' ', @id, ' '), 'colorSwatch')]"))[i].Click();
+                                //var img = images2[i];
+                                //img.Click();
+                                try
+                                {
+                                    driver.FindElement(By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]")).Click();
+                                }
+                                catch (Exception ex)
+                                {
+                                }
+                                driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
+                                driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
+                                var text =
+                                        driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'textColor')]")).Text;
+                                if (text.Length > 0)
+                                    col += text.Trim() + "; ";
+                                var pathImg =
+                                        driver.FindElement(By.XPath("//img[contains(concat(' ', @id, ' '), 'zoomImg')]"))
+                                                .GetAttribute("src");
+                                phs.Add(pathImg);
+                            }
+                            catch (Exception ex) { }
+                        }
+                        if (phs.Count == 0)
+                        {
+                            var div = driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]"));
+                            div.Click();
+                            div = driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]"));
+                            div.Click();
+                            var pathImg =
+                                    driver.FindElement(By.XPath("//img[contains(concat(' ', @id, ' '), 'zoomImg')]"))
+                                            .GetAttribute("src");
+                            phs.Add(pathImg);
+                        }
+                        var ttt = driver.PageSource;
+                        var doc2 = new HtmlAgilityPack.HtmlDocument();
+                        doc2.LoadHtml(ttt);
+                        var size = "";
+                        var desc = "";
+                        var cat = "";
+                        var artic = "";
 
-						var title = Helpers.GetItemInnerText(doc2, "//span[contains(concat(' ', @class, ' '), 'productName')]");
-						artic = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @id, ' '), 'productNumber')]").Replace("prices may vary", "").Trim();
-						col +=
-								Helpers.GetItemsInnerText(doc2, "//label[contains(concat(' ', @for, ' '), 'colorSwatch')]", "", null,
-										"; ").Replace("product image", "").Trim();
-						var price =
-								Helpers.GetItemInnerText(doc2, "//span[contains(concat(' ', @id, ' '), 'priceText')]")
-										.Replace("$", "")
-										.Trim();
-						if (price.Length == 0)
-						{
-							price =
-									Helpers.GetItemInnerText(doc2, "//span[contains(concat(' ', @class, ' '), 'salePrice')]")
-											.Replace("$", "")
-											.Trim();
-						}
-						size =
-								Helpers.GetItemsInnerText(doc2, "//label[contains(concat(' ', @for, ' '), 'size1Swatch')]", "", null,
-										"; ").Replace("Select size", "");
-						if (size.Length > 0)
-							size = Helpers.ReplaceWhiteSpace(size.Replace("Size", "").Replace("currently not available", "").Replace("on order. Estimated ship", ""));
-						if (size.Contains("date"))
-						{
-							var beg = size.IndexOf("date");
-							var temp = size.Remove(beg, size.IndexOf(";", beg));
-							size = Helpers.ReplaceWhiteSpace(size.Replace(temp, ""));
-						}
-						if (col.Length > 0)
-							col = Helpers.ReplaceWhiteSpace(col.ToLower().Replace("select", "").Replace("color:", ""));
-						desc = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @id, ' '), 'tabWindow')]/ul/li", "", null);
-						if (string.IsNullOrEmpty(artic))
-							artic = title;
-						cat = Helpers.GetEncodingCategory(catalog.Name) + "/" +
-									Helpers.GetItemInnerText(doc2, "//a[contains(concat(' ', @class, ' '), 'categorySelected')]");
-						var st = doc2.DocumentNode.InnerText.Contains("Sorry, this item is currently out of stock");
+                        var title = Helpers.GetItemInnerText(doc2,
+                                "//span[contains(concat(' ', @class, ' '), 'productName')]");
+                        artic = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @id, ' '), 'productNumber')]").Replace("prices may vary", "").Trim();
+                        col +=
+                                Helpers.GetItemsInnerText(doc2, "//label[contains(concat(' ', @for, ' '), 'colorSwatch')]",
+                                        "", null, "; ").Replace("product image", "").Trim();
+                        var price =
+                                Helpers.GetItemInnerText(doc2, "//span[contains(concat(' ', @id, ' '), 'priceText')]")
+                                        .Replace("$", "")
+                                        .Trim();
+                        if (price.Trim().Length == 0)
+                        {
+                            price =
+                                    Helpers.GetItemInnerText(doc2, "//span[contains(concat(' ', @class, ' '), 'salePrice')]")
+                                            .Replace("$", "")
+                                            .Trim();
+                        }
+                        size =
+                                Helpers.GetItemsInnerText(doc2, "//label[contains(concat(' ', @for, ' '), 'size1Swatch')]",
+                                        "", null, "; ").Replace("Select size", "");
+                        if (size.Length > 0)
+                            size = Helpers.ReplaceWhiteSpace(size.Replace("Size", "").Replace("currently not available", "").Replace("on order. Estimated ship", ""));
+                        if (size.Contains("date"))
+                        {
+                            var beg = size.IndexOf("date");
+                            var temp = size.Remove(beg, size.IndexOf(";", beg));
+                            size = Helpers.ReplaceWhiteSpace(size.Replace(temp, ""));
+                        }
+                        if (col.Length > 0)
+                            col = Helpers.ReplaceWhiteSpace(col.ToLower().Replace("select", "").Replace("color:", ""));
+                        desc = Helpers.GetItemsInnerText(doc2,
+                                "//div[contains(concat(' ', @id, ' '), 'tabWindow')]/ul/li", "", null);
+                        if (string.IsNullOrEmpty(artic))
+                            artic = title;
+                        cat = Helpers.GetEncodingCategory(catalog.Name) + "/" +
+                                    Helpers.GetItemInnerText(doc2,
+                                            "//a[contains(concat(' ', @class, ' '), 'categorySelected')]");
+                        var st = doc2.DocumentNode.InnerText.Contains("Sorry, this item is currently out of stock");
 
-						products.Add(new Product()
-						{
-							Url = res,
-							Article = artic,
-							Color = col,
-							Description = desc,
-							Name = title,
-							Price = price,
-							CategoryPath = HttpUtility.HtmlDecode(cat),
-							Size = size,
-							Photos = phs,
-							state=st?"no_sale":""
-						});
+                        products.Add(new Product()
+                        {
+                            Url = res,
+                            Article = artic,
+                            Color = col,
+                            Description = desc,
+                            Name = title,
+                            Price = price,
+                            CategoryPath = HttpUtility.HtmlDecode(cat),
+                            Size = size,
+                            Photos = phs,
+                            state = st ? "no_sale" : ""
+                        });
 
-						countRequest++;
-					}
+                        countRequest++;
+
+                    }
 					catch (Exception ex)
 					{
 						try
