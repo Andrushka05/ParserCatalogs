@@ -28,53 +28,57 @@ namespace ParserCatalog
         public static List<Category> GetListCategory(HtmlDocument doc, string xPath, string shopUrl)
         {
             var cats = doc.DocumentNode.SelectNodes(xPath);
-            var catList = new List<Category>();
-            var arr = new string[]
+						if (cats != null)
+						{
+							var catList = new List<Category>();
+							var arr = new string[]
                     {
                         "categ", "catal", "woman", "man", "katalog", "kategorii", "platja", "aksessuary", "roomdecor",
                         "folder", "collect","kategoriya","cat=","subDivision"
                     };
-            foreach (var cat in cats)
-            {
-                if (cat.Attributes.Count > 0)
-                {
-                    var link = cat.Attributes["href"].Value;
-                    bool good = arr.Any(ar => link.Contains(ar));
-                    if (link.Contains("s-trikbel") || shopUrl.Contains("artvision-opt") ||
-                        shopUrl.Contains("opt-ekonom") || shopUrl.Contains("witerra") ||
-                        shopUrl.Contains("ru.gipnozstyle") || shopUrl.Contains("trikotage") ||
-                        shopUrl.Contains("npopt") || shopUrl.Contains("japan-cosmetic") ||
-                                                shopUrl.Contains("liora-shop") || shopUrl.Contains("opttextil") || shopUrl.Contains("donnasara") || shopUrl.Contains("besthat") || shopUrl.Contains("amway") || shopUrl.Contains("alltextile"))
-                        good = true;
-                    if (link.Contains("roomdecor") && (link.Contains("6195") || link.Contains("6159")))
-                        good = false;
+							foreach (var cat in cats)
+							{
+								if (cat.Attributes.Count > 0)
+								{
+									var link = cat.Attributes["href"].Value;
+									bool good = arr.Any(ar => link.Contains(ar));
+									if (link.Contains("s-trikbel") || shopUrl.Contains("artvision-opt") ||
+											shopUrl.Contains("opt-ekonom") || shopUrl.Contains("witerra") ||
+											shopUrl.Contains("ru.gipnozstyle") || shopUrl.Contains("trikotage") ||
+											shopUrl.Contains("npopt") || shopUrl.Contains("japan-cosmetic") ||
+																							shopUrl.Contains("liora-shop") || shopUrl.Contains("opttextil") || shopUrl.Contains("donnasara") || shopUrl.Contains("besthat") || shopUrl.Contains("amway") || shopUrl.Contains("alltextile"))
+										good = true;
+									if (link.Contains("roomdecor") && (link.Contains("6195") || link.Contains("6159")))
+										good = false;
 
-                    if (shopUrl.Contains("xn----0tbbbddeld.xn--p1ai") || shopUrl.Contains("td-adel"))
-                    {
-                        var t1 = cat.ParentNode.InnerHtml;
-                        if (t1.Contains("<ul") || link.Contains("new"))
-                            good = false;
-                    }
+									if (shopUrl.Contains("xn----0tbbbddeld.xn--p1ai") || shopUrl.Contains("td-adel"))
+									{
+										var t1 = cat.ParentNode.InnerHtml;
+										if (t1.Contains("<ul") || link.Contains("new"))
+											good = false;
+									}
 
-                    if (good)
-                    {
-                        if (shopUrl.Contains("www.trimedwedya.ru"))
-                            link = "http://www.trimedwedya.ru" + link;
-                        else if (shopUrl.Contains("td-adel"))
-                            link = "http://td-adel.ru" + link;
-                        else if (shopUrl.Contains("xn----0tbbbddeld.xn--p1ai"))
-                            link = "http://xn----0tbbbddeld.xn--p1ai/" + link;
-                        else if (shopUrl.Contains("lemming.su"))
-                            link = "http://lemming.su" + link;
-                        else if (shopUrl.Contains("vsspb"))
-                            link = "http://vsspb.com" + link;
-                        else if (!link.Contains(shopUrl))
-                            link = shopUrl + link;
-                        catList.Add(new Category() { Name = cat.InnerText, Url = WebUtility.HtmlDecode(link) });
-                    }
-                }
-            }
-            return catList;
+									if (good)
+									{
+										if (shopUrl.Contains("www.trimedwedya.ru"))
+											link = "http://www.trimedwedya.ru" + link;
+										else if (shopUrl.Contains("td-adel"))
+											link = "http://td-adel.ru" + link;
+										else if (shopUrl.Contains("xn----0tbbbddeld.xn--p1ai"))
+											link = "http://xn----0tbbbddeld.xn--p1ai/" + link;
+										else if (shopUrl.Contains("lemming.su"))
+											link = "http://lemming.su" + link;
+										else if (shopUrl.Contains("vsspb"))
+											link = "http://vsspb.com" + link;
+										else if (!link.Contains(shopUrl))
+											link = shopUrl + link;
+										catList.Add(new Category() { Name = cat.InnerText, Url = WebUtility.HtmlDecode(link) });
+									}
+								}
+							}
+							return catList;
+						}
+						return new List<Category>();
         }
         public static string GetShopCatLink(string shopUrl)
         {

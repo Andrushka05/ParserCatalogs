@@ -216,246 +216,261 @@ namespace ParserCatalog
 
 			Parallel.ForEach(pars, new ParallelOptions() { CancellationToken = cancel.Token }, site =>
 			{
-                //try
-                //{
-					var cL = new List<Category>();
-					var shopUrl = site.Categories[0].Url;
-					if (!site.Catalog)
+				//try
+				//{
+				var cL = new List<Category>();
+				var shopUrl = site.Categories[0].Url;
+				if (!site.Catalog)
+				{
+					var catList = new List<Category>();
+					var cook = "";
+					if (shopUrl.Contains("wildberries"))
 					{
-						var catList = new List<Category>();
-						var cook = "";
-						if (shopUrl.Contains("wildberries"))
-						{
-							cook = Helpers.GetCookiePost(shopUrl, new NameValueCollection());
-						}
-						var page = Helpers.GetHtmlDocument(shopUrl, "https://google.com",
-										Encoding.GetEncoding("windows-1251"), cook);
+						cook = Helpers.GetCookiePost(shopUrl, new NameValueCollection());
+					}
+					var page = Helpers.GetHtmlDocument(shopUrl, "https://google.com",
+									Encoding.GetEncoding("windows-1251"), cook);
 
-						var query = Helpers.GetShopCatLink(shopUrl);
+					var query = Helpers.GetShopCatLink(shopUrl);
 
-						var cats = page.DocumentNode.SelectNodes(query);
-						if (shopUrl.Contains("stilgi"))
+					var cats = page.DocumentNode.SelectNodes(query);
+					if (shopUrl.Contains("stilgi"))
+					{
+						var tem = cats[0].InnerHtml;
+						var t = Regex.Split(tem, "dtree.add");
+						catList.AddRange(from s1 in t
+														 where s1.Contains("catalog")
+														 let beg = s1.IndexOf("/catalog")
+														 let link = s1.Substring(beg, s1.IndexOf("\"", beg + 2) - beg)
+														 let name =
+																		 Helpers.GetEncodingCategory(s1.Substring(s1.IndexOf(",", s1.IndexOf(",") + 3) + 2,
+																						 s1.LastIndexOf("\"", beg - 2) - 2 - s1.IndexOf(",", s1.IndexOf(",") + 3)))
+														 select new Category() { Url = "http://www.stilgi.ru" + link, Name = name });
+					}
+					else
+					{
+						catList = Helpers.GetListCategory(page, query, shopUrl);
+					}
+					if (shopUrl.Contains("limoni"))
+					{
+						var driver = new FirefoxDriver();
+						driver.Navigate().GoToUrl("http://www.limoni.ru/kupit-v-roznicu/store/");
+						FindDynamicElement(driver, By.XPath("//td/a[contains(concat(' ', @href, ' '), '/category/')]"), 10);
+						var doc = new HtmlAgilityPack.HtmlDocument();
+						doc.LoadHtml(driver.PageSource);
+						driver.Close();
+						var catLinks = Helpers.GetItemsAttributtList(doc, "//td/a[contains(concat(' ', @href, ' '), '/category/')]", "", "href", null, null);
+						foreach (var c in catLinks)
 						{
-							var tem = cats[0].InnerHtml;
-							var t = Regex.Split(tem, "dtree.add");
-							catList.AddRange(from s1 in t
-															 where s1.Contains("catalog")
-															 let beg = s1.IndexOf("/catalog")
-															 let link = s1.Substring(beg, s1.IndexOf("\"", beg + 2) - beg)
-															 let name =
-																			 Helpers.GetEncodingCategory(s1.Substring(s1.IndexOf(",", s1.IndexOf(",") + 3) + 2,
-																							 s1.LastIndexOf("\"", beg - 2) - 2 - s1.IndexOf(",", s1.IndexOf(",") + 3)))
-															 select new Category() { Url = "http://www.stilgi.ru" + link, Name = name });
+							catList.Add(new Category() { Url = "http://www.limoni.ru/kupit-v-roznicu/store/" + HttpUtility.HtmlDecode(c) });
 						}
-						else
+					}
+					
+					var temp = new HashSet<string>(catList.Select(x => x.Url));
+					if (shopUrl.Contains("lavira"))
+					{
+						var rt = temp.ToList();
+						var tr = new List<string>() { rt[1], rt[2], rt[4], rt[5], rt[6], rt[7] };
+						foreach (var t in tr)
 						{
-							catList = Helpers.GetListCategory(page, query, shopUrl);
-						}
-						var temp = new HashSet<string>(catList.Select(x => x.Url));
-						if (shopUrl.Contains("lavira"))
-						{
-							var rt = temp.ToList();
-							var tr = new List<string>() { rt[1], rt[2], rt[4], rt[5], rt[6], rt[7] };
-							foreach (var t in tr)
-							{
-								cL.Add(catList.FirstOrDefault(x => x.Url == t));
-							}
-						}
-						else
-						{
-							if (temp.Count != catList.Count && !shopUrl.Contains("lavira"))
-							{
-								foreach (var t in temp)
-								{
-									foreach (var g in catList)
-									{
-										if (t.Contains(g.Url))
-										{
-											cL.Add(g);
-											break;
-										}
-									}
-								}
-							}
-							else
-							{
-								cL = catList;
-							}
+							cL.Add(catList.FirstOrDefault(x => x.Url == t));
 						}
 					}
 					else
-						cL = site.Categories;
-					if (shopUrl.Contains("tvoe"))
-						GetTvoi(cL.Select(x => x.Url));
-					else if (shopUrl.Contains("ozkan"))
-						GetOzkan(cL);
-					else if (shopUrl.Contains("leggi"))
 					{
-						leggi = cL.Select(x => x.Url).ToList();
-					}
-					else if (shopUrl.Contains("trikobakh"))
-						GetTrikobakh(cL);
-					else if (shopUrl.Contains("trimedwedya"))
-						GetTrimedwedya(cL);
-					else if (shopUrl.Contains("s-trikbel"))
-						GetTrikbel(cL);
-					else if (shopUrl.Contains("butterfly-dress"))
-						GetButterfly(cL);
-					else if (shopUrl.Contains("aventum"))
-						GetAventum(cL);
-					else if (shopUrl.Contains("sportoptovik"))
-						GetSportoptovik(cL);
-					else if (shopUrl.Contains("roomdecor"))
-						GetRoomdecor(cL);
-					else if (shopUrl.Contains("nashipupsi"))
-						GetNashipupsi(cL);
-					else if (shopUrl.Contains("xn----0tbbbddeld.xn--p1ai"))
-					{
-						cL.RemoveAt(0);
-						GetSportOpt(cL);
-					}
-					else if (shopUrl.Contains("artvision-opt"))
-						GetArtvision(cL);
-					else if (shopUrl.Contains("td-adel"))
-					{
-						cL.RemoveAt(0);
-						GetAdel(cL);
-					}
-					else if (shopUrl.Contains("opt-ekonom"))
-						GetOptEconom(cL);
-					else if (shopUrl.Contains("naksa"))
-						GetNaksa(cL);
-					else if (shopUrl.Contains("nobi54"))
-						GetNobi(cL);
-					else if (shopUrl.Contains("lemming"))
-						GetLemming(cL);
-					else if (shopUrl.Contains("piniolo"))
-						GetPiniolo(cL);
-					else if (shopUrl.Contains("witerra"))
-						GetWiterra(cL);
-					else if (shopUrl.Contains("gipnozstyle"))
-					{
-						cL.RemoveAt(0);
-						GetGipnozstyle(cL);
-					}
-					else if (shopUrl.Contains("noski-a42"))
-						GetNoski(cL);
-					else if (shopUrl.Contains("trikotage"))
-					{
-						if (!cL.Any())
-							cL.Add(new Category() { Url = "http://iv-trikotage.ru/" });
-						GetTrikotage(cL);
-					}
-					else if (shopUrl.Contains("shop-nogti"))
-						GetShopNogti(cL);
-					else if (shopUrl.Contains("npopt"))
-						GetNpopt(cL);
-					else if (shopUrl.Contains("optovik-centr"))
-						GetOptovikCentr(cL);
-					else if (shopUrl.Contains("japan-cosmetic"))
-						GetJapanCosmetic(cL);
-					else if (shopUrl.Contains("maximum"))
-						GetMaximum(cL);
-					else if (shopUrl.Contains("otoys"))
-						GetOtoys(cL);
-					else if (shopUrl.Contains("ubki-valentina"))
-						GetUbkiValentina(cL);
-					else if (shopUrl.Contains("lavira"))
-						GetLavira(cL);
-					else if (shopUrl.Contains("ekb-opt"))
-						GetEkbOpt(cL);
-					else if (shopUrl.Contains("xn--80ajimbcy0a0fp7a.xn--p1ai"))
-						GetMiliePlatia();
-					else if (shopUrl.Contains("aimico-kids"))
-						GetAimicoKids(cL);
-					else if (shopUrl.Contains("texxit"))
-						GetTexxit(cL);
-					else if (shopUrl.Contains("liora-shop"))
-						GetLioraShopt(cL);
-					else if (shopUrl.Contains("indialove"))
-						GetIndialove();
-					else if (shopUrl.Contains("vsspb"))
-						GetVsspb(cL);
-					else if (shopUrl.Contains("stilgi"))
-						GetStilge(cL);
-					else if (shopUrl.Contains("live-toys"))
-						GetLiveToys();
-					else if (shopUrl.Contains("wildberries"))
-						GetWildberries();
-					else if (shopUrl.Contains("picoletto"))
-						GetPicoletto(cL);
-					else if (shopUrl.Contains("stefanika"))
-						GetStefanika(cL);
-					else if (shopUrl.Contains("opttextil"))
-						GetOpttextil(cL);
-					else if (shopUrl.Contains("bus-i-nka"))
-						GetBusinka(cL);
-					else if (shopUrl.Contains("donnasara"))
-						GetDonnasara(cL);
-					else if (shopUrl.Contains("lefik"))
-						GetLefik(cL);
-					else if (shopUrl.Contains("topopt"))
-						GetTopopt(cL);
-					else if (shopUrl.Contains("besthat"))
-						GetBesthat(cL);
-					else if (shopUrl.Contains("colgotki"))
-						GetColgotki(cL);
-					else if (shopUrl.Contains("voolya"))
-						GetVoolya(cL);
-					else if (shopUrl.Contains("l-teks-moskva"))
-						GetLTexsMoskva();
-					else if (shopUrl.Contains("ivselena"))
-					{
-						cL.AddRange(new List<Category>() { new Category() { Url = "http://www.ivselena.ru/catalog/podushki_igrushki/" }, new Category() { Url = "http://www.ivselena.ru/catalog/fartuki/" } });
-						GetIvselena(cL);
-					}
-					else if (shopUrl.Contains("amway"))
-						GetAmway(cL);
-					else if (shopUrl.Contains("arcofam.com.ua"))
-						GetArcofam(cL);
-					else if (shopUrl.Contains("alltextile"))
-						GetAlltextile(cL);
-					else if (shopUrl.Contains("www.gap.com"))
-						GetGap(cL);
-					else if (shopUrl.Contains("carters"))
-					{
-						var shos = cL.Where(x => x.Url.Contains("shoes"));
-						if (shos.Any())
+						if (temp.Count != catList.Count && !shopUrl.Contains("lavira"))
 						{
-							cL.Add(new Category() { Url = "http://www.oshkosh.com/oshkosh-girl-shoes-oshkosh-and-carters", Name = "Girl Shoes" });
-							cL.Add(new Category() { Url = "http://www.oshkosh.com/oshkosh-boy-shoes-oshkosh-and-carters", Name = "Boy Shoes" });
+							foreach (var t in temp)
+							{
+								foreach (var g in catList)
+								{
+									if (t.Contains(g.Url))
+									{
+										cL.Add(g);
+										break;
+									}
+								}
+							}
 						}
-						Thread.Sleep(15000);
-						GetCarters(cL);
-					}
-					else if (shopUrl.Contains("oshkosh"))
-					{
-						var shos = cL.Where(x => x.Url.Contains("shoes"));
-						if (shos.Any())
+						else
 						{
-							cL.Add(new Category() { Url = "http://www.oshkosh.com/oshkosh-girl-shoes-oshkosh-and-carters", Name = "Girl Shoes" });
-							cL.Add(new Category() { Url = "http://www.oshkosh.com/oshkosh-boy-shoes-oshkosh-and-carters", Name = "Boy Shoes" });
+							cL = catList;
 						}
-						Thread.Sleep(40000);
-						GetOshkosh(cL);
 					}
-					else if (shopUrl.Contains("oldnavy"))
+				}
+				else
+					cL = site.Categories;
+				if (shopUrl.Contains("tvoe"))
+					GetTvoi(cL.Select(x => x.Url));
+				else if (shopUrl.Contains("ozkan"))
+					GetOzkan(cL);
+				else if (shopUrl.Contains("leggi"))
+				{
+					leggi = cL.Select(x => x.Url).ToList();
+				}
+				else if (shopUrl.Contains("trikobakh"))
+					GetTrikobakh(cL);
+				else if (shopUrl.Contains("trimedwedya"))
+					GetTrimedwedya(cL);
+				else if (shopUrl.Contains("s-trikbel"))
+					GetTrikbel(cL);
+				else if (shopUrl.Contains("butterfly-dress"))
+					GetButterfly(cL);
+				else if (shopUrl.Contains("aventum"))
+					GetAventum(cL);
+				else if (shopUrl.Contains("sportoptovik"))
+					GetSportoptovik(cL);
+				else if (shopUrl.Contains("roomdecor"))
+					GetRoomdecor(cL);
+				else if (shopUrl.Contains("nashipupsi"))
+					GetNashipupsi(cL);
+				else if (shopUrl.Contains("xn----0tbbbddeld.xn--p1ai"))
+				{
+					cL.RemoveAt(0);
+					GetSportOpt(cL);
+				}
+				else if (shopUrl.Contains("artvision-opt"))
+					GetArtvision(cL);
+				else if (shopUrl.Contains("td-adel"))
+				{
+					cL.RemoveAt(0);
+					GetAdel(cL);
+				}
+				else if (shopUrl.Contains("opt-ekonom"))
+					GetOptEconom(cL);
+				else if (shopUrl.Contains("naksa"))
+					GetNaksa(cL);
+				else if (shopUrl.Contains("nobi54"))
+					GetNobi(cL);
+				else if (shopUrl.Contains("lemming"))
+					GetLemming(cL);
+				else if (shopUrl.Contains("piniolo"))
+					GetPiniolo(cL);
+				else if (shopUrl.Contains("witerra"))
+					GetWiterra(cL);
+				else if (shopUrl.Contains("gipnozstyle"))
+				{
+					cL.RemoveAt(0);
+					GetGipnozstyle(cL);
+				}
+				else if (shopUrl.Contains("noski-a42"))
+					GetNoski(cL);
+				else if (shopUrl.Contains("trikotage"))
+				{
+					if (!cL.Any())
+						cL.Add(new Category() { Url = "http://iv-trikotage.ru/" });
+					GetTrikotage(cL);
+				}
+				else if (shopUrl.Contains("shop-nogti"))
+					GetShopNogti(cL);
+				else if (shopUrl.Contains("npopt"))
+					GetNpopt(cL);
+				else if (shopUrl.Contains("optovik-centr"))
+					GetOptovikCentr(cL);
+				else if (shopUrl.Contains("japan-cosmetic"))
+					GetJapanCosmetic(cL);
+				else if (shopUrl.Contains("maximum"))
+					GetMaximum(cL);
+				else if (shopUrl.Contains("otoys"))
+					GetOtoys(cL);
+				else if (shopUrl.Contains("ubki-valentina"))
+					GetUbkiValentina(cL);
+				else if (shopUrl.Contains("lavira"))
+					GetLavira(cL);
+				else if (shopUrl.Contains("ekb-opt"))
+					GetEkbOpt(cL);
+				else if (shopUrl.Contains("xn--80ajimbcy0a0fp7a.xn--p1ai"))
+					GetMiliePlatia();
+				else if (shopUrl.Contains("aimico-kids"))
+					GetAimicoKids(cL);
+				else if (shopUrl.Contains("texxit"))
+					GetTexxit(cL);
+				else if (shopUrl.Contains("liora-shop"))
+					GetLioraShopt(cL);
+				else if (shopUrl.Contains("indialove"))
+					GetIndialove();
+				else if (shopUrl.Contains("vsspb"))
+					GetVsspb(cL);
+				else if (shopUrl.Contains("stilgi"))
+					GetStilge(cL);
+				else if (shopUrl.Contains("live-toys"))
+					GetLiveToys();
+				else if (shopUrl.Contains("wildberries"))
+					GetWildberries();
+				else if (shopUrl.Contains("picoletto"))
+					GetPicoletto(cL);
+				else if (shopUrl.Contains("stefanika"))
+					GetStefanika(cL);
+				else if (shopUrl.Contains("opttextil"))
+					GetOpttextil(cL);
+				else if (shopUrl.Contains("bus-i-nka"))
+					GetBusinka(cL);
+				else if (shopUrl.Contains("donnasara"))
+					GetDonnasara(cL);
+				else if (shopUrl.Contains("lefik"))
+					GetLefik(cL);
+				else if (shopUrl.Contains("topopt"))
+					GetTopopt(cL);
+				else if (shopUrl.Contains("besthat"))
+					GetBesthat(cL);
+				else if (shopUrl.Contains("colgotki"))
+					GetColgotki(cL);
+				else if (shopUrl.Contains("voolya"))
+					GetVoolya(cL);
+				else if (shopUrl.Contains("l-teks-moskva"))
+					GetLTexsMoskva();
+				else if (shopUrl.Contains("ivselena"))
+				{
+					cL.AddRange(new List<Category>() { new Category() { Url = "http://www.ivselena.ru/catalog/podushki_igrushki/" }, new Category() { Url = "http://www.ivselena.ru/catalog/fartuki/" } });
+					GetIvselena(cL);
+				}
+				else if (shopUrl.Contains("amway"))
+					GetAmway(cL);
+				else if (shopUrl.Contains("arcofam.com.ua"))
+					GetArcofam(cL);
+				else if (shopUrl.Contains("alltextile"))
+					GetAlltextile(cL);
+				else if (shopUrl.Contains("www.gap.com"))
+					GetGap(cL);
+				else if (shopUrl.Contains("carters"))
+				{
+					var shos = cL.Where(x => x.Url.Contains("shoes"));
+					if (shos.Any())
 					{
-                        //Thread.Sleep(60000);
-						GetOldnavy(cL);
+						cL.Add(new Category() { Url = "http://www.oshkosh.com/oshkosh-girl-shoes-oshkosh-and-carters", Name = "Girl Shoes" });
+						cL.Add(new Category() { Url = "http://www.oshkosh.com/oshkosh-boy-shoes-oshkosh-and-carters", Name = "Boy Shoes" });
 					}
-					else if (shopUrl.Contains("limoni"))
-						GetLimoni(cL);
+					Thread.Sleep(15000);
+					GetCarters(cL);
+				}
+				else if (shopUrl.Contains("oshkosh"))
+				{
+					var shos = cL.Where(x => x.Url.Contains("shoes"));
+					if (shos.Any())
+					{
+						cL.Add(new Category() { Url = "http://www.oshkosh.com/oshkosh-girl-shoes-oshkosh-and-carters", Name = "Girl Shoes" });
+						cL.Add(new Category() { Url = "http://www.oshkosh.com/oshkosh-boy-shoes-oshkosh-and-carters", Name = "Boy Shoes" });
+					}
+					Thread.Sleep(40000);
+					GetOshkosh(cL);
+				}
+				else if (shopUrl.Contains("oldnavy"))
+				{
+					//Thread.Sleep(60000);
+					GetOldnavy(cL);
+				}
+				else if (shopUrl.Contains("limoni"))
+					GetLimoni(cL);
 
-					stL.Add(st.Elapsed.ToString());
-                //}
-                //catch (Exception ex)
-                //{
-                //    errors.Add(site.Name + " - Ошибка: " + ex.Message);
-                //}
+				stL.Add(st.Elapsed.ToString());
+				//}
+				//catch (Exception ex)
+				//{
+				//	errors.Add(site.Name + " - Ошибка: " + ex.Message);
+				//}
 			});
 			timeStripStatus.Text = "Время парсинга " + st.Elapsed;
-			countStripStatus.Text = "Загружено " + (pars.Count - errors.Count - 1) + " из " + pars.Count;
+			//countStripStatus.Text = "Загружено " + (pars.Count - errors.Count - 1) + " из " + pars.Count;
 
 			if (leggi.Any())
 			{
@@ -489,69 +504,106 @@ namespace ParserCatalog
 		{
 			var products = new List<Product>();
 			var cook = Helpers.GetCookiePost("http://www.limoni.ru/", new NameValueCollection());
-
+			FirefoxDriver driver = null;
+			bool table = false;
 			foreach (var catalog in list)
 			{
-				var prod = Helpers.GetProductLinks(catalog.Url, cook, "http://www.limoni.ru/kupit-v-roznicu/store",
-												"//div[contains(concat(' ', @class, ' '), 'ecwid-productBrowser-productNameLink')]/a", null);
-				var catal = Helpers.GetProductLinks(catalog.Url, cook, "http://www.limoni.ru/kupit-v-roznicu/store", "//div[contains(concat(' ', @style, ' '), 'display: inline-block;')]/a", null);
+				driver = new FirefoxDriver();
+				driver.Navigate().GoToUrl(catalog.Url);
+				FindDynamicElement(driver, By.XPath("//div[contains(concat(' ', @class, ' '), 'ecwid-productBrowser-productNameLink')]/a"), 10);
+				Thread.Sleep(2000);
+				if (!table)
+				{
+					try
+					{
+						driver.FindElement(By.XPath("//div[contains(concat(' ', @class, ' '), 'ecwid-results-topPanel-viewAsPanel')]/div[last()]")).Click();
+						table = true;
+					}
+					catch (Exception ex) { }
+				}
+				Thread.Sleep(2000);
+				var doc = new HtmlAgilityPack.HtmlDocument();
+				var host="http://www.limoni.ru/kupit-v-roznicu/store";
+				doc.LoadHtml(driver.PageSource);
+				var catLinks = Helpers.GetItemsAttributtList(doc, "//div[contains(concat(' ', @class, ' '), 'ecwid-productBrowser-productNameLink')]/a", "", "href", null, null);
+				var prod=new HashSet<string>();
+				var temp2 = new List<string>();
+				temp2.AddRange(catLinks.Select(x=>host+HttpUtility.HtmlDecode(x)));
+				var catal = Helpers.GetItemsAttributtList(doc, "//div[contains(concat(' ', @style, ' '), 'display: inline-block;')]/a", "", "href", null, null);
 				if (catal.Any())
 				{
-					var lastCount2=catal.Count;
-					var temp2 = new List<string>();
+					catal = catal.Select(x => host + HttpUtility.HtmlDecode(x)).ToList();
+					var lastCount2 = catal.Count;
 					foreach (var c in catal)
 					{
-						if (lastCount2 > 8)
+
+						try
 						{
-							for (int i = 9; i < 901; i += 9)
-							{
-								var link = c.Replace("offset=0", "offset=" + i);
-								var tr = Helpers.GetProductLinks(link, cook, "http://www.limoni.ru/kupit-v-roznicu/store",
-															"//div[contains(concat(' ', @class, ' '), 'ecwid-productBrowser-productNameLink')]/a", null);
-								if (tr.Any() && (lastCount2 != tr.Count || tr.Count > 8))
-									temp2.AddRange(tr);
-								else
-									break;
-							}
+							driver.Navigate().GoToUrl(c);
+							Thread.Sleep(2000);
+							doc.LoadHtml(driver.PageSource);
 						}
+						catch (Exception ex)
+						{
+							driver = new FirefoxDriver();
+							driver.Navigate().GoToUrl(c);
+							doc.LoadHtml(driver.PageSource);
+						}
+						var catal2 = Helpers.GetItemsAttributtList(doc, "//div[contains(concat(' ', @style, ' '), 'display: inline-block;')]/a", "", "href", null, null);
+						var tr = Helpers.GetItemsAttributtList(doc, "//div[contains(concat(' ', @class, ' '), 'ecwid-productBrowser-productNameLink')]/a", "", "href", null, null);
+								if (tr.Any())
+									temp2.AddRange(tr.Select(x => host + HttpUtility.HtmlDecode(x)));
+								if (catal2.Any())
+								{
+									catal2 = catal2.Select(x => host + HttpUtility.HtmlDecode(x)).ToList();
+									foreach (var c2 in catal2)
+									{
+										try
+										{
+											driver.Navigate().GoToUrl(c2);
+											Thread.Sleep(2000);
+											doc.LoadHtml(driver.PageSource);
+										}
+										catch (Exception ex)
+										{
+											driver = new FirefoxDriver();
+											driver.Navigate().GoToUrl(c2);
+											doc.LoadHtml(driver.PageSource);
+										}
+										var tr2 = Helpers.GetItemsAttributtList(doc, "//div[contains(concat(' ', @class, ' '), 'ecwid-productBrowser-productNameLink')]/a", "", "href", null, null);
+										if (tr2.Any())
+											temp2.AddRange(tr2.Select(x => host + HttpUtility.HtmlDecode(x)));
+									}
+								}
 					}
-					temp2.AddRange(prod);
-					prod=new HashSet<string>(temp2);
+					
+					
 				}
-				var lastCount=prod.Count;
-				var temp = new List<string>();
-				if (lastCount > 8)
-				{
-					for (int i = 9; i < 901; i += 9)
-					{
-						var link = catalog.Url.Replace("offset=0", "offset=" + i);
-						var tr = Helpers.GetProductLinks(link, cook, "http://www.limoni.ru/kupit-v-roznicu/store",
-													"//div[contains(concat(' ', @class, ' '), 'ecwid-productBrowser-productNameLink')]/a", null);
-						if (tr.Any() && (lastCount != tr.Count || tr.Count == 9))
-							temp.AddRange(tr);
-							break;
-					}
-					temp.AddRange(prod);
-					prod=new HashSet<string>(temp);
-				}
-
-
-					if (prod.Count == 0)
-						continue;
-
+				prod = new HashSet<string>(temp2);
+				
+				if (prod.Count == 0)
+					continue;
+				driver.Close();
+				driver = new FirefoxDriver();
 				int countRequest = 0;
 				foreach (var res in prod)
 				{
-					//try
-					//{
-					//if (countRequest % 4 == 0)
-					//{
-					//	Thread.Sleep(7000);
-					//}
-
-					var doc2 = Helpers.GetHtmlDocument(res, catalog.Url, null, cook);
-					if (doc2 == null)
-						continue;
+					var doc2 = new HtmlAgilityPack.HtmlDocument();
+					
+					try
+					{
+						driver.Navigate().GoToUrl(res);
+						Thread.Sleep(2000);
+						FindDynamicElement(driver, By.XPath("//div[contains(concat(' ', @class, ' '), 'ecwid-productBrowser-price')]"), 10);
+						doc2.LoadHtml(driver.PageSource);
+					}
+					catch (Exception ex)
+					{
+						driver = new FirefoxDriver();
+						driver.Navigate().GoToUrl(res);
+						doc2.LoadHtml(driver.PageSource);
+					}
+					
 					var col = "";
 					var size = "";
 					var desc = "";
@@ -560,11 +612,11 @@ namespace ParserCatalog
 					var phs = new List<string>();
 					var title = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @class, ' '), 'ecwid-productBrowser-head')]");
 					artic = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @class, ' '), 'ecwid-productBrowser-sku')]").Replace("Артикул", "").Trim();
-					var price = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @class, ' '), 'ecwid-productBrowser-price')]").Replace("р", "").Trim();
+					var price = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @class, ' '), 'ecwid-productBrowser-price')]").Replace("p.", "").Trim();
 					desc = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), 'gwt-HTML')]/p", "", null);
 					if (string.IsNullOrEmpty(artic))
 						artic = title;
-					phs = Helpers.GetPhoto(doc2, "//a[contains(concat(' ', @class, ' '), 'highslide')]");
+					phs = Helpers.GetPhoto(doc2, "","//img[contains(concat(' ', @class, ' '), 'gwt-Image')]");
 					cat = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), 'ecwid-productBrowser-categoryPath-categoryLink')]/a", "", new List<string>() { "Магазин" }, "/");
 					var st = Helpers.GetItemInnerText(doc2,
 							"//div[contains(concat(' ', @class, ' '), 'ecwid-productBrowser-details-inStockLabel')]");
@@ -582,11 +634,13 @@ namespace ParserCatalog
 						Photos = phs,
 						state = !st.Contains("В наличии") ? "no_sale" : ""
 					});
-
+					driver.Manage().Cookies.DeleteAllCookies();
+					Thread.Sleep(2000);
 					countRequest++;
 					//}
 					//catch (Exception ex) { }
 				}
+				driver.Close();
 
 			}
 			Helpers.SaveToFile(products, path.Text + @"\Limoni.xlsx");
@@ -607,39 +661,34 @@ namespace ParserCatalog
 				if (prod.Count > 0)
 				{
 					var temp = new List<string>();
-				    var gg = 0;		
+					var gg = 0;
 					foreach (var cat in prod)
 					{
-					    if (gg%3 == 0&&gg!=0)
-					    {
-                            driver.Close();
-                            Thread.Sleep(3000);
-					        driver = new FirefoxDriver();
-					    }
-                        gg++;
-					    try
-					    {
-					        //driver.Manage().Timeouts().SetScriptTimeout(TimeSpan.FromSeconds(10));
-					       // driver.Manage().Timeouts().SetPageLoadTimeout(TimeSpan.FromSeconds(15));
-                           // Thread.Sleep(2000);
-					        driver.Navigate().GoToUrl(cat);
-                           // Thread.Sleep(10000);
-                            FindDynamicElement(driver, By.ClassName("productItemName"), 10);
-                            Thread.Sleep(1500);
-					        driver.FindElement(By.Id("totalItemCountDivSB")).Click();
-					    }
-					    catch (Exception ex)
-					    {
-					        try
-					        {
-					            driver.Close();
-					        }catch(Exception e){}
-                            driver=new FirefoxDriver();
-                            driver.Navigate().GoToUrl(cat);
-                            FindDynamicElement(driver, By.Id("totalItemCountDivSB"), 10);
-                            driver.FindElement(By.Id("totalItemCountDivSB")).Click();
-					    }
-					    var source = driver.PageSource;
+						
+						try
+						{
+							//driver.Manage().Timeouts().SetScriptTimeout(TimeSpan.FromSeconds(10));
+							driver.Manage().Timeouts().SetPageLoadTimeout(TimeSpan.FromSeconds(15));
+							// Thread.Sleep(2000);
+							driver.Navigate().GoToUrl(cat);
+							// Thread.Sleep(10000);
+							FindDynamicElement(driver, By.ClassName("productItemName"), 10);
+							Thread.Sleep(1500);
+							driver.FindElement(By.Id("totalItemCountDivSB")).Click();
+						}
+						catch (Exception ex)
+						{
+							try
+							{
+								driver.Close();
+							}
+							catch (Exception e) { }
+							driver = new FirefoxDriver();
+							driver.Navigate().GoToUrl(cat);
+							//FindDynamicElement(driver, By.Id("totalItemCountDivSB"), 10);
+							//driver.FindElement(By.Id("totalItemCountDivSB")).Click();
+						}
+						var source = driver.PageSource;
 						var doc = new HtmlAgilityPack.HtmlDocument();
 						doc.LoadHtml(source);
 						var pagesLink = Helpers.GetItemsAttributtList(doc, "//a[contains(concat(' ', @class, ' '), 'productItemName')]", "", "href", null, null);
@@ -652,8 +701,8 @@ namespace ParserCatalog
 							pagesLink.Remove(o);
 						}
 						temp.AddRange(pagesLink);
-						try
-						{
+						//try
+						//{
 							foreach (var t1 in oidLink)
 							{
 								Thread.Sleep(700);
@@ -672,25 +721,26 @@ namespace ParserCatalog
 								temp.AddRange(reg.Select(r => link + "&pid=" + r));
 							}
 
-							Thread.Sleep(1000);
-							driver.Navigate().GoToUrl(cat);
-							var page = driver.FindElement(By.XPath("//a[contains(concat(' ', @title, ' '), 'Next page')]"));
-							if (page != null)
+							Thread.Sleep(5000);
+							if(driver.Url.Contains("oid"))
+								driver.Navigate().GoToUrl(cat);
+							var page = doc.DocumentNode.SelectNodes("//div[contains(concat(' ', @class, ' '), 'pagePaginator hideMe')]");
+							if (page == null)
 							{
 								try
 								{
-                                    driver.FindElement(By.XPath("//a[contains(concat(' ', @title, ' '), 'Next page')]")).Click();
+									driver.FindElement(By.XPath("//a[contains(concat(' ', @title, ' '), 'Next page')]")).Click();
 								}
 								catch (Exception ex)
 								{
-                                    Thread.Sleep(1000);
-                                    driver.Navigate().Back();
+									Thread.Sleep(1000);
+									driver.Navigate().Back();
 									continue;
-                                }
+								}
 								Thread.Sleep(1000);
 								source = driver.PageSource;
 								doc = new HtmlAgilityPack.HtmlDocument();
-								doc.LoadHtml(source);
+								doc.LoadHtml(source);//pagePaginator hideMe
 								pagesLink = Helpers.GetItemsAttributtList(doc, "//a[contains(concat(' ', @class, ' '), 'productItemName')]", "", "href", null, null);
 								pagesLink = pagesLink.Select(x => "http://oldnavy.gap.com" + HttpUtility.HtmlDecode(x)).ToList();
 								oidLink = pagesLink.Where(x => x.Contains("oid=")).ToList();
@@ -699,7 +749,7 @@ namespace ParserCatalog
 									pagesLink.Remove(o);
 								}
 								temp.AddRange(pagesLink);
-
+								var linkpag1 = driver.Url;
 								foreach (var t1 in oidLink)
 								{
 									Thread.Sleep(700);
@@ -718,21 +768,24 @@ namespace ParserCatalog
 									temp.AddRange(reg.Select(r => link + "&pid=" + r));
 								}
 								Thread.Sleep(1000);
-								driver.Navigate().GoToUrl(cat);
+								if (driver.Url.Contains("oid"))
+									driver.Navigate().GoToUrl(linkpag1);
 								FindDynamicElement(driver, By.XPath("//a[contains(concat(' ', @title, ' '), 'Next page')]"), 5);
-								
+
 								bool p2 = false;
 								try
 								{
-                                    driver.FindElement(By.XPath("//a[contains(concat(' ', @title, ' '), 'Next page')]")).Click();
-									Thread.Sleep(1000);
-									driver.FindElement(By.XPath("//a[contains(concat(' ', @title, ' '), 'Next page')]")).Click();
-									p2 = true;
+									var page2 = doc.DocumentNode.SelectNodes("//div[contains(concat(' ', @class, ' '), 'pagePaginator hideMe')]");
+									if (page2 == null)
+									{
+										driver.FindElement(By.XPath("//a[contains(concat(' ', @title, ' '), 'Next page')]")).Click();
+										p2 = true;
+									}
 								}
 								catch (Exception ex)
 								{
-                                    Thread.Sleep(1000);
-                                    driver.Navigate().Back();
+									Thread.Sleep(1000);
+									driver.Navigate().Back();
 									continue;
 								}
 								if (p2)
@@ -769,12 +822,12 @@ namespace ParserCatalog
 									}
 								}
 							}
-						}
-						catch (Exception ex)
-						{
+						//}
+						//catch (Exception ex)
+						//{
 
-						}
-					    
+						//}
+
 					}
 					prod = new HashSet<string>(temp);
 				}
@@ -788,76 +841,93 @@ namespace ParserCatalog
 					try
 					{
 						driver.Navigate().GoToUrl(res);
+					}
+					catch (Exception ex)
+					{
+						try
+						{
+							driver.Close();
+						}
+						catch (Exception ee) { }
+						Thread.Sleep(80000);
+						driver = new FirefoxDriver();
+					}
 						var col = "";
 						FindDynamicElement(driver, By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]"), 5);
-						var images =driver.FindElements(By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]")).Count;
+						var images = 0;
+						try
+						{
+							images = driver.FindElements(By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]")).Count;
+						}
+						catch (Exception ex) { }
 						var phs = new List<string>();
 						for (var i = 0; i < images; i++)
 						{
-						    try
-						    {
-						        FindDynamicElement(driver,
-						            By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]"), 5);
-						        //var images2 =
-						        driver.FindElements(By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]"))[i].Click();
-						        //var img = images2[i];
-						        //img.Click();
-						        driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
-						        driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
+							try
+							{
+								FindDynamicElement(driver,
+										By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]"), 5);
+								//var images2 =
+								driver.FindElements(By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]"))[i].Click();
+								//var img = images2[i];
+								//img.Click();
+								driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
+								driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
 
-						        var pathImg =
-						            driver.FindElement(By.XPath("//img[contains(concat(' ', @id, ' '), 'zoomImg')]"))
-						                .GetAttribute("src");
-						        phs.Add(pathImg);
-						    }
-						    catch (Exception ex)
-						    {
-						        
-						    }
+								var pathImg =
+										driver.FindElement(By.XPath("//img[contains(concat(' ', @id, ' '), 'zoomImg')]"))
+												.GetAttribute("src");
+								phs.Add(pathImg);
+							}
+							catch (Exception ex)
+							{
+
+							}
 						}
-						var imagCol =	driver.FindElements(By.XPath("//input[contains(concat(' ', @id, ' '), 'colorSwatch')]")).Count;
+						var imagCol = driver.FindElements(By.XPath("//input[contains(concat(' ', @id, ' '), 'colorSwatch')]")).Count;
 						for (var i = 1; i < imagCol && imagCol > 1; i++)
 						{
-						    try
-						    {
-						        FindDynamicElement(driver, By.XPath("//input[contains(concat(' ', @id, ' '), 'colorSwatch')]"), 5);
-						        //var images2 =
-						        driver.FindElements(By.XPath("//input[contains(concat(' ', @id, ' '), 'colorSwatch')]"))[i].Click();
-						        //var img = images2[i];
-						        //img.Click();
-						        try
-						        {
-						            driver.FindElement(By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]")).Click();
-						        }
-						        catch (Exception ex)
-						        {
-						        }
-						        driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
-						        driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
-						        var text =
-						            driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'textColor')]")).Text;
-						        if (text.Length > 0)
-						            col += text.Trim() + "; ";
-						        var pathImg =
-						            driver.FindElement(By.XPath("//img[contains(concat(' ', @id, ' '), 'zoomImg')]"))
-						                .GetAttribute("src");
-						        phs.Add(pathImg);
-						    }
-						    catch (Exception ex)
-						    {
-						        
-						    }
+							try
+							{
+								FindDynamicElement(driver, By.XPath("//input[contains(concat(' ', @id, ' '), 'colorSwatch')]"), 5);
+								//var images2 =
+								driver.FindElements(By.XPath("//input[contains(concat(' ', @id, ' '), 'colorSwatch')]"))[i].Click();
+								//var img = images2[i];
+								//img.Click();
+								try
+								{
+									driver.FindElement(By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]")).Click();
+								}
+								catch (Exception ex)
+								{
+								}
+								driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
+								driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
+								var text =
+										driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'textColor')]")).Text;
+								if (text.Length > 0)
+									col += text.Trim() + "; ";
+								var pathImg =
+										driver.FindElement(By.XPath("//img[contains(concat(' ', @id, ' '), 'zoomImg')]"))
+												.GetAttribute("src");
+								phs.Add(pathImg);
+							}
+							catch (Exception ex)
+							{
+
+							}
 						}
-					    try
-					    {
-					        driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
-					        driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
-					        var img =
-					            driver.FindElement(By.XPath("//img[contains(concat(' ', @id, ' '), 'zoomImg')]"))
-					                .GetAttribute("src");
-					        phs.Add(img);
-					    }catch(Exception ex){}
-					    var ttt = driver.PageSource;
+						try
+						{
+							driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
+							driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
+							var img =
+									driver.FindElement(By.XPath("//img[contains(concat(' ', @id, ' '), 'zoomImg')]"))
+											.GetAttribute("src");
+							phs.Add(img);
+						}
+						catch (Exception ex) { }
+						var ttt = driver.PageSource;
 						var doc2 = new HtmlAgilityPack.HtmlDocument();
 						doc2.LoadHtml(ttt);
 						var size = "";
@@ -887,7 +957,7 @@ namespace ParserCatalog
 								Helpers.GetItemsInnerText(doc2, "//label[contains(concat(' ', @for, ' '), 'size1Swatch')]",
 										"", null, "; ").Replace("Select size", "");
 						if (size.Length > 0)
-							size = Helpers.ReplaceWhiteSpace(size.Replace("Size", "").Replace("currently not available", "").Replace("on order. Estimated ship",""));
+							size = Helpers.ReplaceWhiteSpace(size.Replace("Size", "").Replace("currently not available", "").Replace("on order. Estimated ship", ""));
 						if (size.Contains("date"))
 						{
 							var beg = size.IndexOf("date");
@@ -904,7 +974,7 @@ namespace ParserCatalog
 									Helpers.GetItemInnerText(doc2,
 											"//a[contains(concat(' ', @class, ' '), 'categorySelected')]");
 						var st = doc2.DocumentNode.InnerText.Contains("Sorry, this item is currently out of stock");
-						
+
 						products.Add(new Product()
 						{
 							Url = res,
@@ -916,27 +986,17 @@ namespace ParserCatalog
 							CategoryPath = HttpUtility.HtmlDecode(cat),
 							Size = size,
 							Photos = phs,
-							state=st?"no_sale":""
+							state = st ? "no_sale" : ""
 						});
 
 						countRequest++;
-
-					}
-					catch (Exception ex)
-					{
-						try
-						{
-							driver.Close();
-						}
-						catch (Exception ee) { }
-						Thread.Sleep(80000);
-						driver = new FirefoxDriver();
-					}
+						driver.Manage().Cookies.DeleteAllCookies();
+					
 
 				}
 				driver.Close();
 				listBrowsers.Remove(driver);
-				Helpers.SaveToFile(products, path.Text + @"\Oldnavy-" + Helpers.ReplaceWhiteSpace(Helpers.GetEncodingCategory(catalog.Name).Replace("\n", " ")) + ".xlsx",false,false);
+				Helpers.SaveToFile(products, path.Text + @"\Oldnavy-" + Helpers.ReplaceWhiteSpace(Helpers.GetEncodingCategory(catalog.Name).Replace("\n", " ")) + ".xlsx", false, false);
 			}
 
 			StatusStrip("Oldnavy");
@@ -966,16 +1026,14 @@ namespace ParserCatalog
 
 							html.Navigate().GoToUrl(cat);
 							FindDynamicElement(html, By.XPath("//div[contains(concat(' ', @class, ' '), 'breadcrumb')]/ul/li[last()]"), 5);
-							var link2 =
+							//var link2 =
 											html.FindElement(
-													By.XPath("//div[contains(concat(' ', @class, ' '), 'breadcrumb')]/ul/li[last()]"));
-							link2.Click();
+													By.XPath("//div[contains(concat(' ', @class, ' '), 'breadcrumb')]/ul/li[last()]")).Click();
 							try
 							{
-								var link =
+								//var link =
 										html.FindElement(
-												By.XPath("//a[contains(concat(' ', @href, ' '), '&sz=')]"));
-								link.Click();
+												By.XPath("//a[contains(concat(' ', @href, ' '), '&sz=')]")).Click();
 							}
 							catch (Exception ex) { }
 							FindDynamicElement(html, By.XPath("//a[contains(concat(' ', @class, ' '), 'name-link')][last()]"), 5);
@@ -1003,7 +1061,54 @@ namespace ParserCatalog
 					listBrowsers.Remove(html);
 					prod = new HashSet<string>(temp);
 				}
-				else
+				else if (catalog.Url.Contains("shoes"))
+				{
+					var html = new FirefoxDriver();
+					listBrowsers.Add(html);
+					var temp = new List<string>();
+					try
+					{
+						var doc = new HtmlAgilityPack.HtmlDocument();
+
+						html.Navigate().GoToUrl(catalog.Url);
+						FindDynamicElement(html, By.XPath("//div[contains(concat(' ', @class, ' '), 'results-hits')]/span/a"), 5);
+						try
+						{
+							var link =
+									html.FindElement(
+											By.XPath("//div[contains(concat(' ', @class, ' '), 'results-hits')]/span/a"));
+							link.Click();
+						}
+						catch (Exception ex)
+						{
+						}
+						FindDynamicElement(html, By.XPath("//a[contains(concat(' ', @class, ' '), 'name-link')][last()]"), 5);
+						Thread.Sleep(1000);
+						var source = html.PageSource;
+						doc.LoadHtml(source);
+						var tr = Helpers.GetItemsAttributtList(doc, "//a[contains(concat(' ', @class, ' '), 'name-link')]", "",
+								"href", null, null);
+						if (!tr.Contains("http://www.oshkosh.com"))
+							tr = tr.Select(x => "http://www.oshkosh.com" + x).ToList();
+						if (tr.Any())
+							temp.AddRange(tr);
+					}
+					catch (Exception ex)
+					{
+						try
+						{
+							html.Close();
+						}
+						catch (Exception z) { }
+						Thread.Sleep(50000);
+						html = new FirefoxDriver();
+					}
+
+					html.Close();
+					listBrowsers.Remove(html);
+					prod = new HashSet<string>(temp);
+				}
+				if (!prod.Any())
 					continue;
 
 				int countRequest = 0;
@@ -1011,7 +1116,7 @@ namespace ParserCatalog
 				{
 					//try
 					//{
-					if (countRequest % 3 == 0)
+					if (countRequest % 5 == 0)
 					{
 						Thread.Sleep(7000);
 					}
@@ -1127,7 +1232,54 @@ namespace ParserCatalog
 					listBrowsers.Remove(html);
 					prod = new HashSet<string>(temp);
 				}
-				else
+				else if (catalog.Url.Contains("shoes"))
+				{
+					var html = new FirefoxDriver();
+					listBrowsers.Add(html);
+					var temp = new List<string>();
+						try
+						{
+							var doc = new HtmlAgilityPack.HtmlDocument();
+
+							html.Navigate().GoToUrl(catalog.Url);
+							FindDynamicElement(html, By.XPath("//div[contains(concat(' ', @class, ' '), 'results-hits')]/span/a"), 5);
+							try
+							{
+								var link =
+										html.FindElement(
+												By.XPath("//div[contains(concat(' ', @class, ' '), 'results-hits')]/span/a"));
+								link.Click();
+							}
+							catch (Exception ex)
+							{
+							}
+							FindDynamicElement(html, By.XPath("//a[contains(concat(' ', @class, ' '), 'name-link')][last()]"), 5);
+							Thread.Sleep(1000);
+							var source = html.PageSource;
+							doc.LoadHtml(source);
+							var tr = Helpers.GetItemsAttributtList(doc, "//a[contains(concat(' ', @class, ' '), 'name-link')]", "",
+									"href", null, null);
+							if (!tr.Contains("http://www.carters.com"))
+								tr = tr.Select(x => "http://www.carters.com" + x).ToList();
+							if (tr.Any())
+								temp.AddRange(tr);
+						}
+						catch (Exception ex)
+						{
+							try
+							{
+								html.Close();
+							}
+							catch (Exception z) { }
+							Thread.Sleep(50000);
+							html = new FirefoxDriver();
+						}
+					
+					html.Close();
+					listBrowsers.Remove(html);
+					prod = new HashSet<string>(temp);
+				}
+				if(!prod.Any())
 					continue;
 
 				int countRequest = 0;
@@ -1247,7 +1399,7 @@ namespace ParserCatalog
 							{
 								try
 								{
-                                    driver.FindElement(By.XPath("//a[contains(concat(' ', @title, ' '), 'Next page')]")).Click();
+									driver.FindElement(By.XPath("//a[contains(concat(' ', @title, ' '), 'Next page')]")).Click();
 								}
 								catch (Exception ex)
 								{
@@ -1290,10 +1442,10 @@ namespace ParserCatalog
 								bool p2 = false;
 								try
 								{
-                                    driver.FindElement(By.XPath("//a[contains(concat(' ', @title, ' '), 'Next page')]")).Click();
+									driver.FindElement(By.XPath("//a[contains(concat(' ', @title, ' '), 'Next page')]")).Click();
 									Thread.Sleep(1000);
 									driver.FindElement(By.XPath("//a[contains(concat(' ', @title, ' '), 'Next page')]")).Click();
-									
+
 									p2 = true;
 								}
 								catch (Exception ex)
@@ -1344,143 +1496,15 @@ namespace ParserCatalog
 				}
 				else
 					continue;
-                driver.Manage().Timeouts().SetPageLoadTimeout(TimeSpan.FromMinutes(1));
-                driver.Manage().Timeouts().SetScriptTimeout(TimeSpan.FromSeconds(10));
-                int countRequest = 0;
-                foreach (var res in prod)
-                {
-                    try
-                    {
-                        driver.Navigate().GoToUrl(res);
-                        var col = "";
-                        FindDynamicElement(driver, By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]"), 5);
-                        var images = driver.FindElements(By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]")).Count;
-                        var phs = new List<string>();
-                        for (var i = 0; i < images; i++)
-                        {
-                            try
-                            {
-                                FindDynamicElement(driver,
-                                        By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]"), 5);
-                                //var images2 =
-                                driver.FindElements(By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]"))[i].Click();
-                                //var img = images2[i];
-                                //img.Click();
-                                driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
-                                driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
-
-                                var pathImg =
-                                        driver.FindElement(By.XPath("//img[contains(concat(' ', @id, ' '), 'zoomImg')]"))
-                                                .GetAttribute("src");
-                                phs.Add(pathImg);
-                            }
-                            catch (Exception ex) { }
-                        }
-                        var imagCol = driver.FindElements(By.XPath("//input[contains(concat(' ', @id, ' '), 'colorSwatch')]")).Count;
-                        for (var i = 1; i < imagCol && imagCol > 1; i++)
-                        {
-                            try
-                            {
-                                FindDynamicElement(driver, By.XPath("//input[contains(concat(' ', @id, ' '), 'colorSwatch')]"), 5);
-                                //var images2 =
-                                driver.FindElements(By.XPath("//input[contains(concat(' ', @id, ' '), 'colorSwatch')]"))[i].Click();
-                                //var img = images2[i];
-                                //img.Click();
-                                try
-                                {
-                                    driver.FindElement(By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]")).Click();
-                                }
-                                catch (Exception ex)
-                                {
-                                }
-                                driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
-                                driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
-                                var text =
-                                        driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'textColor')]")).Text;
-                                if (text.Length > 0)
-                                    col += text.Trim() + "; ";
-                                var pathImg =
-                                        driver.FindElement(By.XPath("//img[contains(concat(' ', @id, ' '), 'zoomImg')]"))
-                                                .GetAttribute("src");
-                                phs.Add(pathImg);
-                            }
-                            catch (Exception ex) { }
-                        }
-                        if (phs.Count == 0)
-                        {
-                            var div = driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]"));
-                            div.Click();
-                            div = driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]"));
-                            div.Click();
-                            var pathImg =
-                                    driver.FindElement(By.XPath("//img[contains(concat(' ', @id, ' '), 'zoomImg')]"))
-                                            .GetAttribute("src");
-                            phs.Add(pathImg);
-                        }
-                        var ttt = driver.PageSource;
-                        var doc2 = new HtmlAgilityPack.HtmlDocument();
-                        doc2.LoadHtml(ttt);
-                        var size = "";
-                        var desc = "";
-                        var cat = "";
-                        var artic = "";
-
-                        var title = Helpers.GetItemInnerText(doc2,
-                                "//span[contains(concat(' ', @class, ' '), 'productName')]");
-                        artic = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @id, ' '), 'productNumber')]").Replace("prices may vary", "").Trim();
-                        col +=
-                                Helpers.GetItemsInnerText(doc2, "//label[contains(concat(' ', @for, ' '), 'colorSwatch')]",
-                                        "", null, "; ").Replace("product image", "").Trim();
-                        var price =
-                                Helpers.GetItemInnerText(doc2, "//span[contains(concat(' ', @id, ' '), 'priceText')]")
-                                        .Replace("$", "")
-                                        .Trim();
-                        if (price.Trim().Length == 0)
-                        {
-                            price =
-                                    Helpers.GetItemInnerText(doc2, "//span[contains(concat(' ', @class, ' '), 'salePrice')]")
-                                            .Replace("$", "")
-                                            .Trim();
-                        }
-                        size =
-                                Helpers.GetItemsInnerText(doc2, "//label[contains(concat(' ', @for, ' '), 'size1Swatch')]",
-                                        "", null, "; ").Replace("Select size", "");
-                        if (size.Length > 0)
-                            size = Helpers.ReplaceWhiteSpace(size.Replace("Size", "").Replace("currently not available", "").Replace("on order. Estimated ship", ""));
-                        if (size.Contains("date"))
-                        {
-                            var beg = size.IndexOf("date");
-                            var temp = size.Remove(beg, size.IndexOf(";", beg));
-                            size = Helpers.ReplaceWhiteSpace(size.Replace(temp, ""));
-                        }
-                        if (col.Length > 0)
-                            col = Helpers.ReplaceWhiteSpace(col.ToLower().Replace("select", "").Replace("color:", ""));
-                        desc = Helpers.GetItemsInnerText(doc2,
-                                "//div[contains(concat(' ', @id, ' '), 'tabWindow')]/ul/li", "", null);
-                        if (string.IsNullOrEmpty(artic))
-                            artic = title;
-                        cat = Helpers.GetEncodingCategory(catalog.Name) + "/" +
-                                    Helpers.GetItemInnerText(doc2,
-                                            "//a[contains(concat(' ', @class, ' '), 'categorySelected')]");
-                        var st = doc2.DocumentNode.InnerText.Contains("Sorry, this item is currently out of stock");
-
-                        products.Add(new Product()
-                        {
-                            Url = res,
-                            Article = artic,
-                            Color = col,
-                            Description = desc,
-                            Name = title,
-                            Price = price,
-                            CategoryPath = HttpUtility.HtmlDecode(cat),
-                            Size = size,
-                            Photos = phs,
-                            state = st ? "no_sale" : ""
-                        });
-
-                        countRequest++;
-
-                    }
+				driver.Manage().Timeouts().SetPageLoadTimeout(TimeSpan.FromMinutes(1));
+				driver.Manage().Timeouts().SetScriptTimeout(TimeSpan.FromSeconds(10));
+				int countRequest = 0;
+				foreach (var res in prod)
+				{
+					try
+					{
+						driver.Navigate().GoToUrl(res);
+					}
 					catch (Exception ex)
 					{
 						try
@@ -1491,6 +1515,132 @@ namespace ParserCatalog
 						Thread.Sleep(80000);
 						driver = new FirefoxDriver();
 					}
+						var col = "";
+						FindDynamicElement(driver, By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]"), 5);
+						var images = driver.FindElements(By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]")).Count;
+						var phs = new List<string>();
+						for (var i = 0; i < images; i++)
+						{
+							try
+							{
+								FindDynamicElement(driver,
+												By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]"), 5);
+								//var images2 =
+								driver.FindElements(By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]"))[i].Click();
+								//var img = images2[i];
+								//img.Click();
+								driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
+								driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
+
+								var pathImg =
+												driver.FindElement(By.XPath("//img[contains(concat(' ', @id, ' '), 'zoomImg')]"))
+																.GetAttribute("src");
+								phs.Add(pathImg);
+							}
+							catch (Exception ex) { }
+						}
+						var imagCol = driver.FindElements(By.XPath("//input[contains(concat(' ', @id, ' '), 'colorSwatch')]")).Count;
+						for (var i = 1; i < imagCol && imagCol > 1; i++)
+						{
+							try
+							{
+								FindDynamicElement(driver, By.XPath("//input[contains(concat(' ', @id, ' '), 'colorSwatch')]"), 5);
+								driver.FindElements(By.XPath("//input[contains(concat(' ', @id, ' '), 'colorSwatch')]"))[i].Click();
+								try
+								{
+									driver.FindElement(By.XPath("//input[contains(concat(' ', @id, ' '), 'thumbImage')]")).Click();
+								}
+								catch (Exception ex)
+								{
+								}
+								driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
+								driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]")).Click();
+								var text =
+												driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'textColor')]")).Text;
+								if (text.Length > 0)
+									col += text.Trim() + "; ";
+								var pathImg =
+												driver.FindElement(By.XPath("//img[contains(concat(' ', @id, ' '), 'zoomImg')]"))
+																.GetAttribute("src");
+								phs.Add(pathImg);
+							}
+							catch (Exception ex) { }
+						}
+						if (phs.Count == 0)
+						{
+							var div=driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]"));
+							div.Click();
+							div = driver.FindElement(By.XPath("//div[contains(concat(' ', @id, ' '), 'dragLayer')]"));
+							div.Click();
+							var pathImg =
+											driver.FindElement(By.XPath("//img[contains(concat(' ', @id, ' '), 'zoomImg')]"))
+															.GetAttribute("src");
+							phs.Add(pathImg);
+						}
+						var ttt = driver.PageSource;
+						var doc2 = new HtmlAgilityPack.HtmlDocument();
+						doc2.LoadHtml(ttt);
+						var size = "";
+						var desc = "";
+						var cat = "";
+						var artic = "";
+
+						var title = Helpers.GetItemInnerText(doc2,
+										"//span[contains(concat(' ', @class, ' '), 'productName')]");
+						artic = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @id, ' '), 'productNumber')]").Replace("prices may vary", "").Trim();
+						col +=
+										Helpers.GetItemsInnerText(doc2, "//label[contains(concat(' ', @for, ' '), 'colorSwatch')]",
+														"", null, "; ").Replace("product image", "").Trim();
+						var price =
+										Helpers.GetItemInnerText(doc2, "//span[contains(concat(' ', @id, ' '), 'priceText')]")
+														.Replace("$", "")
+														.Trim();
+						if (price.Trim().Length == 0)
+						{
+							price =
+											Helpers.GetItemInnerText(doc2, "//span[contains(concat(' ', @class, ' '), 'salePrice')]")
+															.Replace("$", "")
+															.Trim();
+						}
+						size =
+										Helpers.GetItemsInnerText(doc2, "//label[contains(concat(' ', @for, ' '), 'size1Swatch')]",
+														"", null, "; ").Replace("Select size", "");
+						if (size.Length > 0)
+							size = Helpers.ReplaceWhiteSpace(size.Replace("Size", "").Replace("currently not available", "").Replace("on order. Estimated ship", ""));
+						if (size.Contains("date"))
+						{
+							var beg = size.IndexOf("date");
+							var temp = size.Remove(beg, size.IndexOf(";", beg));
+							size = Helpers.ReplaceWhiteSpace(size.Replace(temp, ""));
+						}
+						if (col.Length > 0)
+							col = Helpers.ReplaceWhiteSpace(col.ToLower().Replace("select", "").Replace("color:", ""));
+						desc = Helpers.GetItemsInnerText(doc2,
+										"//div[contains(concat(' ', @id, ' '), 'tabWindow')]/ul/li", "", null);
+						if (string.IsNullOrEmpty(artic))
+							artic = title;
+						cat = Helpers.GetEncodingCategory(catalog.Name) + "/" +
+												Helpers.GetItemInnerText(doc2,
+																"//a[contains(concat(' ', @class, ' '), 'categorySelected')]");
+						var st = doc2.DocumentNode.InnerText.Contains("Sorry, this item is currently out of stock");
+
+						products.Add(new Product()
+						{
+							Url = res,
+							Article = artic,
+							Color = col,
+							Description = desc,
+							Name = title,
+							Price = price,
+							CategoryPath = HttpUtility.HtmlDecode(cat),
+							Size = size,
+							Photos = phs,
+							state = st ? "no_sale" : ""
+						});
+
+						countRequest++;
+
+					
 
 				}
 				driver.Close();
@@ -7449,7 +7599,7 @@ namespace ParserCatalog
 			var end = countStripStatus.Text.Substring(countStripStatus.Text.IndexOf("из"), countStripStatus.Text.Length - countStripStatus.Text.IndexOf("из"));
 			var strip = countStripStatus.Text.Replace(end, "");
 			var numb = Convert.ToInt32(Regex.Replace(strip, @"[^\d]", ""));
-			countStripStatus.Text = "Скачено " + (numb + 1) + " " + end;
+			this.Invoke(new Action(() => { countStripStatus.Text = "Скачено " + (numb + 1) + " " + end; }));
 		}
 		//private void button1_Click(object sender, EventArgs e)
 		//{
@@ -7517,7 +7667,10 @@ namespace ParserCatalog
 		{
 			foreach (var listBrowser in listBrowsers)
 			{
-				listBrowser.Close();
+				try
+				{
+					listBrowser.Close();
+				}catch(Exception ex){}
 			}
 			listBrowsers.Clear();
 			bwMain.CancelAsync();
@@ -7534,7 +7687,11 @@ namespace ParserCatalog
 		{
 			foreach (var listBrowser in listBrowsers)
 			{
-				listBrowser.Close();
+				try
+				{
+					listBrowser.Close();
+				}
+				catch (Exception ex) { }
 			}
 			listBrowsers.Clear();
 			bwMain.CancelAsync();
