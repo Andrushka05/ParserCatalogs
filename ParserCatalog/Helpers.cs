@@ -28,61 +28,61 @@ namespace ParserCatalog
         public static List<Category> GetListCategory(HtmlDocument doc, string xPath, string shopUrl)
         {
             var cats = doc.DocumentNode.SelectNodes(xPath);
-						if (cats != null)
-						{
-							var catList = new List<Category>();
-							var arr = new string[]
+            if (cats != null)
+            {
+                var catList = new List<Category>();
+                var arr = new string[]
                     {
                         "categ", "catal", "woman", "man", "katalog", "kategorii", "platja", "aksessuary", "roomdecor",
                         "folder", "collect","kategoriya","cat=","subDivision"
                     };
-							foreach (var cat in cats)
-							{
-								if (cat.Attributes.Count > 0)
-								{
-									var link = cat.Attributes["href"].Value;
-									bool good = arr.Any(ar => link.Contains(ar));
-									if (link.Contains("s-trikbel") || shopUrl.Contains("artvision-opt") ||
-											shopUrl.Contains("opt-ekonom") || shopUrl.Contains("witerra") ||
-											shopUrl.Contains("ru.gipnozstyle") || shopUrl.Contains("trikotage") ||
-											shopUrl.Contains("npopt") || shopUrl.Contains("japan-cosmetic") ||
-																							shopUrl.Contains("liora-shop") || shopUrl.Contains("kupper-sport") || shopUrl.Contains("firanka") || shopUrl.Contains("sklep.nife") || shopUrl.Contains("opttextil") || shopUrl.Contains("donnasara") || shopUrl.Contains("besthat") || shopUrl.Contains("amway") || shopUrl.Contains("alltextile"))
-										good = true;
-									if (link.Contains("roomdecor") && (link.Contains("6195") || link.Contains("6159")))
-										good = false;
+                foreach (var cat in cats)
+                {
+                    if (cat.Attributes.Count > 0)
+                    {
+                        var link = cat.Attributes["href"].Value;
+                        bool good = arr.Any(ar => link.Contains(ar));
+                        if (link.Contains("s-trikbel") || shopUrl.Contains("artvision-opt") ||
+                                shopUrl.Contains("opt-ekonom") || shopUrl.Contains("witerra") ||
+                                shopUrl.Contains("ru.gipnozstyle") || shopUrl.Contains("trikotage") ||
+                                shopUrl.Contains("npopt") || shopUrl.Contains("japan-cosmetic") ||
+                                                                                shopUrl.Contains("liora-shop") || shopUrl.Contains("kupper-sport") || shopUrl.Contains("firanka") || shopUrl.Contains("sklep.nife") || shopUrl.Contains("opttextil") || shopUrl.Contains("donnasara") || shopUrl.Contains("besthat") || shopUrl.Contains("amway") || shopUrl.Contains("alltextile"))
+                            good = true;
+                        if (link.Contains("roomdecor") && (link.Contains("6195") || link.Contains("6159")))
+                            good = false;
 
-									if (shopUrl.Contains("xn----0tbbbddeld.xn--p1ai") || shopUrl.Contains("td-adel"))
-									{
-										var t1 = cat.ParentNode.InnerHtml;
-										if (t1.Contains("<ul") || link.Contains("new"))
-											good = false;
-									}
+                        if (shopUrl.Contains("xn----0tbbbddeld.xn--p1ai") || shopUrl.Contains("td-adel"))
+                        {
+                            var t1 = cat.ParentNode.InnerHtml;
+                            if (t1.Contains("<ul") || link.Contains("new"))
+                                good = false;
+                        }
 
-									if (good)
-									{
-										if (shopUrl.Contains("www.trimedwedya.ru"))
-											link = "http://www.trimedwedya.ru" + link;
-										else if (shopUrl.Contains("td-adel"))
-											link = "http://td-adel.ru" + link;
-										else if (shopUrl.Contains("xn----0tbbbddeld.xn--p1ai"))
-											link = "http://xn----0tbbbddeld.xn--p1ai/" + link;
-										else if (shopUrl.Contains("lemming.su"))
-											link = "http://lemming.su" + link;
-										else if (shopUrl.Contains("vsspb"))
-											link = "http://vsspb.com" + link;
-										else if(shopUrl.Contains("kupper-sport"))
-											link = "http://www.kupper-sport.ru" + link;
-										else if (shopUrl.Contains("dobroe-utro"))
-											link = "http://www.dobroe-utro.com" + link;
-										else if (!link.Contains(shopUrl))
-											link = shopUrl + link;
-										catList.Add(new Category() { Name = cat.InnerText, Url = WebUtility.HtmlDecode(link) });
-									}
-								}
-							}
-							return catList;
-						}
-						return new List<Category>();
+                        if (good)
+                        {
+                            if (shopUrl.Contains("www.trimedwedya.ru"))
+                                link = "http://www.trimedwedya.ru" + link;
+                            else if (shopUrl.Contains("td-adel"))
+                                link = "http://td-adel.ru" + link;
+                            else if (shopUrl.Contains("xn----0tbbbddeld.xn--p1ai"))
+                                link = "http://xn----0tbbbddeld.xn--p1ai/" + link;
+                            else if (shopUrl.Contains("lemming.su"))
+                                link = "http://lemming.su" + link;
+                            else if (shopUrl.Contains("vsspb"))
+                                link = "http://vsspb.com" + link;
+                            else if (shopUrl.Contains("kupper-sport"))
+                                link = "http://www.kupper-sport.ru" + link;
+                            else if (shopUrl.Contains("dobroe-utro"))
+                                link = "http://www.dobroe-utro.com" + link;
+                            else if (!link.Contains(shopUrl))
+                                link = shopUrl + link;
+                            catList.Add(new Category() { Name = cat.InnerText, Url = WebUtility.HtmlDecode(link) });
+                        }
+                    }
+                }
+                return catList;
+            }
+            return new List<Category>();
         }
         public static string GetShopCatLink(string shopUrl)
         {
@@ -153,13 +153,14 @@ namespace ParserCatalog
                 query = "//ul[contains(concat(' ', @class, ' '), 'gap_navigation')]/li/a";
             else if (shopUrl.Contains("limoni.ru"))
                 query = "//td/a[contains(concat(' ', @href, ' '), '/category/')]";
-						else if (shopUrl.Contains("sklep.nife"))
-							query = "//td[contains(concat(' ', @class, ' '), 'gorne_menu')]/a";
-						else if (shopUrl.Contains("firanka"))
-							query = "//div[contains(concat(' ', @class, ' '), 'title')]/a";
-						else if (shopUrl.Contains("kupper-sport"))
-							query = "//ul/li/a[contains(concat(' ', @href, ' '), '/product')]";
-					
+            else if (shopUrl.Contains("sklep.nife"))
+                query = "//td[contains(concat(' ', @class, ' '), 'gorne_menu')]/a";
+            else if (shopUrl.Contains("firanka"))
+                query = "//div[contains(concat(' ', @class, ' '), 'title')]/a";
+            else if (shopUrl.Contains("kupper-sport"))
+                query = "//ul/li/a[contains(concat(' ', @href, ' '), '/product')]";
+            else if (shopUrl.Contains("tkelf"))
+                query = "//a[contains(concat(' ', @href, ' '), '/catalog/')]";
 
             return query;
         }
@@ -916,7 +917,7 @@ namespace ParserCatalog
             catch (Exception ex) { }
             return new HashSet<string>(prLink);
         }
-        public static HashSet<string> GetProductLinks2(string catalogLink, string cook, string site, string xA, string xApage, string strPage, Encoding type, string host = "", bool pageLastNumber=false)
+        public static HashSet<string> GetProductLinks2(string catalogLink, string cook, string site, string xA, string xApage, string strPage, Encoding type, string host = "", bool pageLastNumber = false)
         {
             var prLink = new List<string>();
             try
@@ -954,14 +955,15 @@ namespace ParserCatalog
                     {
                         var max = 0;
                         var l = HttpUtility.HtmlDecode(pages[0].Attributes["href"].Value);
-												var num = "";
-												if (pageLastNumber)
-												{
-													num = l.Substring(l.IndexOf(strPage));
-													num = num.Replace(strPage,"").Trim();
-												}else
-													num = Regex.Replace(l.Substring(l.LastIndexOf(strPage), l.Length - l.LastIndexOf(strPage)), @"[^\d]", "");
-												
+                        var num = "";
+                        if (pageLastNumber)
+                        {
+                            num = l.Substring(l.IndexOf(strPage));
+                            num = num.Replace(strPage, "").Trim();
+                        }
+                        else
+                            num = Regex.Replace(l.Substring(l.LastIndexOf(strPage), l.Length - l.LastIndexOf(strPage)), @"[^\d]", "");
+
 
                         var tr = Int32.TryParse(num, out max);
 

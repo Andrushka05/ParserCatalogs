@@ -112,14 +112,14 @@ namespace ParserCatalog
 			shops.Add(new Shop() { Name = "Firanka", Url = "http://firanka.ru" });
 			shops.Add(new Shop() { Name = "Kupper-sport", Url = "http://www.kupper-sport.ru/catalog.php" });
 			shops.Add(new Shop() { Name = "Dobroe-utro", Url = "http://www.dobroe-utro.com/katalog" });
-			shops.Add(new Shop() { Name = "Donna-saggia", Url = "http://donna-saggia.ru" });
+            //shops.Add(new Shop() { Name = "Donna-saggia", Url = "http://donna-saggia.ru" });
 			//shops.Add(new Shop() { Name = "Argoclassic", Url = "http://www.argoclassic.ru" });
-			//shops.Add(new Shop() { Name = "Tkelf", Url = "http://www.tkelf.ru" });
+            shops.Add(new Shop() { Name = "Tkelf", Url = "http://www.tkelf.ru/catalog/index.php" });
 			//shops.Add(new Shop() { Name = "In-stylefashion.de", Url = "http://ru.in-stylefashion.de" });
 			//shops.Add(new Shop() { Name = "Noch-sorochki", Url = "http://noch-sorochki.ru" });
 			//shops.Add(new Shop() { Name = "Elite-cosmetics", Url = "http://www.elite-cosmetics.ru" });
 			//shops.Add(new Shop() { Name = "Ora-tm", Url = "http://ora-tm.com/" });
-			//shops.Add(new Shop() { Name = "Danda", Url = "http://www.danda.ru/" });
+            shops.Add(new Shop() { Name = "Danda", Url = "http://www.danda.ru/goods.php" });
 
 			shops = shops.OrderBy(x => x.Name).ToList();
 
@@ -230,8 +230,8 @@ namespace ParserCatalog
 
 			Parallel.ForEach(pars, new ParallelOptions() { CancellationToken = cancel.Token }, site =>
 			{
-				//try
-				//{
+				try
+				{
 				var cL = new List<Category>();
 				var shopUrl = site.Categories[0].Url;
 				if (!site.Catalog)
@@ -486,14 +486,15 @@ namespace ParserCatalog
 
 
 				stL.Add(st.Elapsed.ToString());
-				//}
-				//catch (Exception ex)
-				//{
-				//	errors.Add(site.Name + " - Ошибка: " + ex.Message);
-				//}
+                }
+                catch (Exception ex)
+                {
+                    errors.Add(site.Name + " - Ошибка: " + ex.Message);
+                }
 			});
-			timeStripStatus.Text = "Время парсинга " + st.Elapsed;
-			//countStripStatus.Text = "Загружено " + (pars.Count - errors.Count - 1) + " из " + pars.Count;
+            this.Invoke(new Action(() => { timeStripStatus.Text = "Время парсинга " + st.Elapsed; countStripStatus.Text = "Загружено " + (pars.Count - errors.Count - 1) + " из " + pars.Count; }));
+            //timeStripStatus.Text = "Время парсинга " + st.Elapsed;
+            //countStripStatus.Text = "Загружено " + (pars.Count - errors.Count - 1) + " из " + pars.Count;
 
 			if (leggi.Any())
 			{
@@ -523,7 +524,6 @@ namespace ParserCatalog
 			bwMain.DoWork += bw_Parsing;
 			bwMain.RunWorkerAsync();
 		}
-
 
 
 
@@ -560,8 +560,9 @@ namespace ParserCatalog
 					var artic = "";
 					var phs = new List<string>();
 					var title = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @class, ' '), 'fc')]/h1");
-					desc = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), 'description')]/p", "", null);
-					var price = Helpers.GetItemInnerText(doc2, "//table[contains(concat(' ', @class, ' '), 'product_price')]/tr/td/p/span/strong").Trim();
+                    artic = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @class, ' '), 'description')]/p[text()[contains('Артикул')]]").Replace("Артикул:","").Trim();
+					desc = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), 'description')]/p", "", new List<string>(){"Артикул"});
+					var prices = Helpers.GetItemsInnerTextList(doc2, "//table[contains(concat(' ', @class, ' '), 'product_price')]/tr/td/p/span/strong","",null,null);
 					var siz = Helpers.GetItemsInnerTextList(doc2, "//table[contains(concat(' ', @class, ' '), 'product_price')]/tr/td/p", "", null,null);
 					if (siz.Any())
 					{
@@ -575,30 +576,57 @@ namespace ParserCatalog
 					cat = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), 'navigator')]/a", "", new List<string>() { "Главная"}, "/");
 					col = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), 'prod_preview')]/ul/li", "", null, "; ");
 					var temo = doc2.DocumentNode.SelectNodes("//div[contains(concat(' ', @class, ' '), 'prod_preview')]/ul/li");
-					products.Add(new Product()
-					{
-						Url = res,
-						Article = artic,
-						Color = col,
-						Description = desc,
-						Name = title,
-						Price = price,
-						CategoryPath = cat,
-						Size = size,
-						Photos = phs,
-					});
-
-					countRequest++;
+				    if (siz.Count > 1)
+				    {
+				        for (var i = 0; i < siz.Count; i++)
+				        {
+				            products.Add(new Product()
+				            {
+				                Url = i==0?res:"",
+				                Article = artic,
+				                Color = col,
+				                Description = desc,
+				                Name = title,
+				                Price = prices[i],
+				                CategoryPath = cat,
+                                Size = siz[i].Contains("-") ? siz[i].Remove(siz[i].IndexOf("-")).Trim() : siz[i],
+				                Photos = phs,
+				            });
+				            if (i == 0)
+				            {
+				                col = "";
+				                desc = "";
+				                cat = "";
+                                phs=new List<string>();
+				                title = "";
+				            }
+				        }
+				    }
+				    else
+				    {
+				        products.Add(new Product()
+				        {
+				            Url = res,
+				            Article = artic,
+				            Color = col,
+				            Description = desc,
+				            Name = title,
+				            Price = prices[0],
+				            CategoryPath = cat,
+				            Size = size,
+				            Photos = phs,
+				        });
+				    }
+				    countRequest++;
 					//}
 					//catch (Exception ex) { }
 				}
 
 			}
-			Helpers.SaveToFile(products, path.Text + @"\DobroeUtro.xlsx");
+			Helpers.SaveToFile(products, path.Text + @"\DobroeUtro.xlsx",false,false);
 			StatusStrip("DobroeUtro");
 		}
-		
-		private void GetKupper(IEnumerable<Category> list)
+	    private void GetKupper(IEnumerable<Category> list)
 		{
 			var products = new List<Product>();
 			var cook = Helpers.GetCookiePost("http://www.kupper-sport.ru/", new NameValueCollection());
@@ -8209,7 +8237,7 @@ namespace ParserCatalog
 			Start.Enabled = true;
 			Open.Enabled = false;
 			Open.Visible = false;
-			Open.Refresh();
+			this.Update();
 		}
 
 		private void Form1_FormClosing(object sender, FormClosingEventArgs e)
