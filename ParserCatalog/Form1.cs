@@ -619,7 +619,7 @@ namespace ParserCatalog
 					var artic = "";
 					var phs = new List<string>();
 					var title = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @class, ' '), 'fc')]/h1");
-                    artic = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @class, ' '), 'description')]/p[text()[contains('Артикул')]]").Replace("Артикул:","").Trim();
+                    +                    artic = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), 'description')]/p", "Артикул",null).Replace("Артикул:", "").Trim();
 					desc = Helpers.GetItemsInnerText(doc2, "//div[contains(concat(' ', @class, ' '), 'description')]/p", "", new List<string>(){"Артикул"});
 					var prices = Helpers.GetItemsInnerTextList(doc2, "//table[contains(concat(' ', @class, ' '), 'product_price')]/tr/td/p/span/strong","",null,null);
 					var siz = Helpers.GetItemsInnerTextList(doc2, "//table[contains(concat(' ', @class, ' '), 'product_price')]/tr/td/p", "", null,null);
