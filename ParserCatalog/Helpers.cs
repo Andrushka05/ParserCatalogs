@@ -19,6 +19,10 @@ using HtmlAgilityPack;
 using OfficeOpenXml;
 using OfficeOpenXml.Drawing;
 using OfficeOpenXml.Style;
+//using NPOI.SS.UserModel;
+//using NPOI.SS.Util;
+//using NPOI.HSSF.UserModel;
+
 
 namespace ParserCatalog
 {
@@ -87,80 +91,80 @@ namespace ParserCatalog
         public static string GetShopCatLink(string shopUrl)
         {
             var query = "//ul/li/a";
-            if (shopUrl.Contains("trimedwedya") || shopUrl.Contains("artvision-opt") || shopUrl.Contains("ivselena"))
-                query = "//ul/li/ul/li/a";
-            else if (shopUrl.Contains("butterfly-dress"))
-                query = "//ul/li/ul/li/div/a";
-            else if (shopUrl.Contains("s-trikbel"))
-                query = "//li[contains(concat(' ', @class, ' '), ' name ')]/a";
-            else if (shopUrl.Contains("roomdecor"))
-                query = "//li/ul/li/a";
-            else if (shopUrl.Contains("nashipupsi"))
-                query = "//a[contains(concat(' ', @href, ' '), 'folder')]";
-            else if (shopUrl.Contains("opt-ekonom"))
-                query = "//span[contains(concat(' ', @class, ' '), ' inner ')]/a";
-            else if (shopUrl.Contains("lemming"))
-                query = "//span/a";
-            else if (shopUrl.Contains("piniolo"))
-                query = "//li[contains(concat(' ', @class, ' '), ' item ')]/a";
-            else if (shopUrl.Contains("witerra"))
-                query = "//td[contains(concat(' ', @class, ' '), ' boxText ')]/a";
-            else if (shopUrl.Contains("ru.gipnozstyle"))
-                query = "//div[contains(concat(' ', @class, ' '), ' twocol ')]/a";
-            else if (shopUrl.Contains("shop-nogti"))
-                query = "//div/div/div/a";
-            else if (shopUrl.Contains("iv-trikotage"))
-                query = "//div[contains(concat(' ', @class, ' '), ' menu_spec ')]/ul/li/a";
-            else if (shopUrl.Contains("optovik-centr"))
-                query = "//a[contains(concat(' ', @class, ' '), ' mainlevel_frontpage_categories ')]";
-            else if (shopUrl.Contains("japan-cosmetic"))
-                query = "//div[contains(concat(' ', @class, ' '), 'moduletableproizv')]/div/a";
-            else if (shopUrl.Contains("ekb-opt"))
-                query = "//p[contains(concat(' ', @class, ' '), ' catalog level1')]/a";
-            else if (shopUrl.Contains("aimico-kids"))
-                query = "//ul[contains(concat(' ', @class, ' '), ' aim-vmenu')]/li/a";
-            else if (shopUrl.Contains("texxit") || shopUrl.Contains("alltextile"))
-                query = "//ul[contains(concat(' ', @class, ' '), ' menu')]/li/a";
-            else if (shopUrl.Contains("liora-shop"))
-                query = "//ul[contains(concat(' ', @class, ' '), 'level1')]/li/a";
-            else if (shopUrl.Contains("vsspb"))
-                query = "//ul[contains(concat(' ', @class, ' '), 'menu_ver')]/li/a | //ul[contains(concat(' ', @class, ' '), 'menu_ver')]/li/ul/li/a";
-            else if (shopUrl.Contains("stilgi"))
-                query = "//td/script[2]";
-            else if (shopUrl.Contains("stefanika"))
-                query = "//ul/li/div/a";
-            else if (shopUrl.Contains("opttextil"))
-                query = "//div[contains(concat(' ', @class, ' '), ' elem ')]/a | //div[contains(concat(' ', @class, ' '), ' popsmenu ')]/div/span/a";
-            else if (shopUrl.Contains("bus-i-nka"))
-                query = "//ul[contains(concat(' ', @class, ' '), ' categories ')]/li/a";
-            else if (shopUrl.Contains("donnasara"))
-                query = "//ul[contains(concat(' ', @class, ' '), ' b-sidebar-menu__submenu ')]/li/a";
-            else if (shopUrl.Contains("lefik"))
-                query = "//ul[contains(concat(' ', @class, ' '), ' collections-list ')]/li/a | //ul[contains(concat(' ', @class, ' '), ' subcol ')]/li/a";
-            else if (shopUrl.Contains("topopt"))
-                query = "//div[contains(concat(' ', @class, ' '), 'newMenu')]/div/a";
-            else if (shopUrl.Contains("besthat"))
-                query = "//ul[contains(concat(' ', @class, ' '), 'menu-subcategories')]/li/a";
-            else if (shopUrl.Contains("colgotki"))
-                query = "//div[contains(concat(' ', @class, ' '), 'art-BlockContent-body')]/a";
-            else if (shopUrl.Contains("voolya"))
-                query = "//div[contains(concat(' ', @class, ' '), 'menu')]/a";
-            else if (shopUrl.Contains("amway"))
-                query = "//li[contains(concat(' ', @class, ' '), 'menu_product_category')]/a";
-            else if (shopUrl.Contains("arcofam"))
-                query = "//ul[contains(concat(' ', @class, ' '), 'categories test')]/li/a";
-            else if (shopUrl.Contains("gap.com"))
-                query = "//ul[contains(concat(' ', @class, ' '), 'gap_navigation')]/li/a";
-            else if (shopUrl.Contains("limoni.ru"))
-                query = "//td/a[contains(concat(' ', @href, ' '), '/category/')]";
-            else if (shopUrl.Contains("sklep.nife"))
-                query = "//td[contains(concat(' ', @class, ' '), 'gorne_menu')]/a";
-            else if (shopUrl.Contains("firanka"))
-                query = "//div[contains(concat(' ', @class, ' '), 'title')]/a";
-            else if (shopUrl.Contains("kupper-sport"))
-                query = "//ul/li/a[contains(concat(' ', @href, ' '), '/product')]";
-            else if (shopUrl.Contains("tkelf"))
-                query = "//a[contains(concat(' ', @href, ' '), '/catalog/')]";
+						if (shopUrl.Contains("trimedwedya") || shopUrl.Contains("artvision-opt") || shopUrl.Contains("ivselena"))
+							query = "//ul/li/ul/li/a";
+						else if (shopUrl.Contains("butterfly-dress"))
+							query = "//ul/li/ul/li/div/a";
+						else if (shopUrl.Contains("s-trikbel"))
+							query = "//li[contains(concat(' ', @class, ' '), ' name ')]/a";
+						else if (shopUrl.Contains("roomdecor"))
+							query = "//li/ul/li/a";
+						else if (shopUrl.Contains("nashipupsi"))
+							query = "//a[contains(concat(' ', @href, ' '), 'folder')]";
+						else if (shopUrl.Contains("opt-ekonom"))
+							query = "//span[contains(concat(' ', @class, ' '), ' inner ')]/a";
+						else if (shopUrl.Contains("lemming"))
+							query = "//span/a";
+						else if (shopUrl.Contains("piniolo"))
+							query = "//li[contains(concat(' ', @class, ' '), ' item ')]/a";
+						else if (shopUrl.Contains("witerra"))
+							query = "//td[contains(concat(' ', @class, ' '), ' boxText ')]/a";
+						else if (shopUrl.Contains("ru.gipnozstyle"))
+							query = "//div[contains(concat(' ', @class, ' '), ' twocol ')]/a";
+						else if (shopUrl.Contains("shop-nogti"))
+							query = "//div/div/div/a";
+						else if (shopUrl.Contains("iv-trikotage"))
+							query = "//div[contains(concat(' ', @class, ' '), ' menu_spec ')]/ul/li/a";
+						else if (shopUrl.Contains("optovik-centr"))
+							query = "//a[contains(concat(' ', @class, ' '), ' mainlevel_frontpage_categories ')]";
+						else if (shopUrl.Contains("japan-cosmetic"))
+							query = "//div[contains(concat(' ', @class, ' '), 'moduletableproizv')]/div/a";
+						else if (shopUrl.Contains("ekb-opt"))
+							query = "//p[contains(concat(' ', @class, ' '), ' catalog level1')]/a";
+						else if (shopUrl.Contains("aimico-kids"))
+							query = "//ul[contains(concat(' ', @class, ' '), ' aim-vmenu')]/li/a";
+						else if (shopUrl.Contains("texxit") || shopUrl.Contains("alltextile"))
+							query = "//ul[contains(concat(' ', @class, ' '), ' menu')]/li/a";
+						else if (shopUrl.Contains("liora-shop"))
+							query = "//ul[contains(concat(' ', @class, ' '), 'level1')]/li/a";
+						else if (shopUrl.Contains("vsspb"))
+							query = "//ul[contains(concat(' ', @class, ' '), 'menu_ver')]/li/a | //ul[contains(concat(' ', @class, ' '), 'menu_ver')]/li/ul/li/a";
+						else if (shopUrl.Contains("stilgi"))
+							query = "//td/script[2]";
+						else if (shopUrl.Contains("stefanika"))
+							query = "//ul/li/div/a";
+						else if (shopUrl.Contains("opttextil"))
+							query = "//div[contains(concat(' ', @class, ' '), ' elem ')]/a | //div[contains(concat(' ', @class, ' '), ' popsmenu ')]/div/span/a";
+						else if (shopUrl.Contains("bus-i-nka"))
+							query = "//ul[contains(concat(' ', @class, ' '), ' categories ')]/li/a";
+						else if (shopUrl.Contains("donnasara"))
+							query = "//ul[contains(concat(' ', @class, ' '), ' b-sidebar-menu__submenu ')]/li/a";
+						else if (shopUrl.Contains("lefik"))
+							query = "//ul[contains(concat(' ', @class, ' '), ' collections-list ')]/li/a | //ul[contains(concat(' ', @class, ' '), ' subcol ')]/li/a";
+						else if (shopUrl.Contains("topopt"))
+							query = "//div[contains(concat(' ', @class, ' '), 'newMenu')]/div/a";
+						else if (shopUrl.Contains("besthat"))
+							query = "//ul[contains(concat(' ', @class, ' '), 'menu-subcategories')]/li/a";
+						else if (shopUrl.Contains("colgotki"))
+							query = "//div[contains(concat(' ', @class, ' '), 'art-BlockContent-body')]/a";
+						else if (shopUrl.Contains("voolya"))
+							query = "//div[contains(concat(' ', @class, ' '), 'menu')]/a";
+						else if (shopUrl.Contains("amway"))
+							query = "//li[contains(concat(' ', @class, ' '), 'menu_product_category')]/a";
+						else if (shopUrl.Contains("arcofam"))
+							query = "//ul[contains(concat(' ', @class, ' '), 'categories test')]/li/a";
+						else if (shopUrl.Contains("gap.com"))
+							query = "//ul[contains(concat(' ', @class, ' '), 'gap_navigation')]/li/a";
+						else if (shopUrl.Contains("limoni.ru"))
+							query = "//td/a[contains(concat(' ', @href, ' '), '/category/')]";
+						else if (shopUrl.Contains("sklep.nife"))
+							query = "//td[contains(concat(' ', @class, ' '), 'gorne_menu')]/a";
+						else if (shopUrl.Contains("firanka"))
+							query = "//div[contains(concat(' ', @class, ' '), 'title')]/a";
+						else if (shopUrl.Contains("kupper-sport"))
+							query = "//ul/li/a[contains(concat(' ', @href, ' '), '/product')]";
+						else if (shopUrl.Contains("tkelf"))
+							query = "//a[contains(concat(' ', @href, ' '), '/catalog/')]";
 
             return query;
         }
@@ -1415,54 +1419,93 @@ namespace ParserCatalog
 
                         //Setting Value in cell
 
-                        cell.Value = dc.ColumnName;
+                        
                         if (dc.ColumnName == "Photo")
                             cel2.Value = "Фото";
-                        else if (dc.ColumnName == "CategoryPath")
-                            cel2.Value = "Рубрика в каталоге закупки";
-                        else if (dc.ColumnName == "Name")
-                            cel2.Value = "Название";
-                        else if (dc.ColumnName == "Article")
-                            cel2.Value = "Артикул поставщика (необязательно)";
-                        else if (dc.ColumnName == "Size")
-                            cel2.Value = "Размер";
-                        else if (dc.ColumnName == "Color")
-                            cel2.Value = "Цвет";
-                        else if (dc.ColumnName.Contains("Prices"))
-                        {
-                            var reg = Regex.Replace(dc.ColumnName, @"[^\d]", "");
-                            cel2.Value = "Оптовая цена " + reg;
-                        }
-                        else if (dc.ColumnName.Contains("Price"))
-                        {
-                            var reg = Regex.Replace(dc.ColumnName, @"[^\d]", "");
-                            if (reg.Length == 0)
-                                cel2.Value = "Оптовая цена";
-                            else
-                                cel2.Value = "Оптовая цена " + reg;
-                        }
-                        else if (dc.ColumnName == "Description")
-                            cel2.Value = "Описание";
-                        else if (dc.ColumnName == "Url")
-                            cel2.Value = "Ссылка на сайте поставщика";
-                        else if (dc.ColumnName.Contains("Photos"))
-                        {
-                            var reg = Regex.Replace(dc.ColumnName, @"[^\d]", "");
-                            if (reg.Length == 0)
-                                cel2.Value = "Фото 1";
-                            else
-                                cel2.Value = "Фото " + reg;
-                        }
-                        else if (dc.ColumnName == "state")
-                            cel2.Value = "Статус";
-                        else if (dc.ColumnName == "client_price")
-                            cel2.Value = "Цена c орг. сбором";
-                        else if (dc.ColumnName == "main_categories")
-                            cel2.Value = "Рубрика в общем каталоге";
-                        else if (dc.ColumnName == "article")
-                            cel2.Value = "Артикул";
-                        else
-                            cel2.Value = dc.ColumnName;
+												else if (dc.ColumnName == "CategoryPath")
+												{
+													cel2.Value = "Рубрика в каталоге закупки";
+													cell.Value = "purchase_categories";
+												}
+												else if (dc.ColumnName == "Name")
+												{
+													cel2.Value = "Название";
+													cell.Value = "name";
+												}
+												else if (dc.ColumnName == "Article")
+												{
+													cel2.Value = "Артикул поставщика (необязательно)";
+													cell.Value = "original_article";
+												}
+												else if (dc.ColumnName == "Size")
+												{
+													cel2.Value = "Размер";
+													cell.Value = "option2";
+												}
+												else if (dc.ColumnName == "Color")
+												{
+													cel2.Value = "Цвет";
+													cell.Value = "option1";
+												}
+												else if (dc.ColumnName.Contains("Prices"))
+												{
+													var reg = Regex.Replace(dc.ColumnName, @"[^\d]", "");
+													cel2.Value = "Оптовая цена " + reg;
+													cell.Value = dc.ColumnName;
+												}
+												else if (dc.ColumnName.Contains("Price"))
+												{
+													var reg = Regex.Replace(dc.ColumnName, @"[^\d]", "");
+													if (reg.Length == 0)
+														cel2.Value = "Оптовая цена";
+													else
+														cel2.Value = "Оптовая цена " + reg;
+													cell.Value = dc.ColumnName.ToLower();
+												}
+												else if (dc.ColumnName == "Description")
+												{
+													cel2.Value = "Описание";
+													cell.Value = dc.ColumnName.ToLower();
+												}
+												else if (dc.ColumnName == "Url")
+												{
+													cel2.Value = "Ссылка на сайте поставщика";
+													cell.Value = "supplier_url";
+												}
+												else if (dc.ColumnName.Contains("Photos"))
+												{
+													var reg = Regex.Replace(dc.ColumnName, @"[^\d]", "");
+													if (reg.Length == 0)
+														cel2.Value = "Фото 1";
+													else
+														cel2.Value = "Фото " + reg;
+													cell.Value = dc.ColumnName.ToLower().Replace("photos","image");
+												}
+												else if (dc.ColumnName == "state")
+												{
+													cel2.Value = "Статус";
+													cell.Value = dc.ColumnName;
+												}
+												else if (dc.ColumnName == "client_price")
+												{
+													cel2.Value = "Цена c орг. сбором";
+													cell.Value = dc.ColumnName;
+												}
+												else if (dc.ColumnName == "main_categories")
+												{
+													cel2.Value = "Рубрика в общем каталоге";
+													cell.Value = dc.ColumnName;
+												}
+												else if (dc.ColumnName == "article")
+												{
+													cel2.Value = "Артикул";
+													cell.Value = dc.ColumnName;
+												}
+												else
+												{
+													cel2.Value = dc.ColumnName;
+													cell.Value = dc.ColumnName;
+												}
                         colIndex++;
                     }
                 }
@@ -1563,7 +1606,28 @@ namespace ParserCatalog
                 File.WriteAllBytes(path, bin);
             }
         }
-
+				//public static void Convert2007To2003(string path)
+				//{
+				
+				//	 // Getting the worksheet by its name... 
+				//	//var sheet = templateWorkbook.GetSheet("Sheet1"); // Getting the row... 0 is the first row. 
+				//	//var dataRow = sheet.GetRow(4); // Setting the value 77 at row 5 column 1 
+				//	//dataRow.GetCell(0).SetCellValue(77); // Forcing formula recalculation... 
+				//	//sheet.ForceFormulaRecalculation = true; 
+				//	//MemoryStream ms = new MemoryStream(); // Writing the workbook content to the FileStream... 
+				//	//templateWorkbook.Write(ms); 
+				//	//return File(ms.ToArray(), "application/vnd.ms-excel", "NPOINewFile.xls");
+				//	using (FileStream fs = File.OpenRead(path))
+				//	{
+				//		HSSFWorkbook templateWorkbook = new HSSFWorkbook(fs, true);
+				//		using (FileStream out1 = new FileStream(path.Remove(path.Length-1), FileMode.Create))
+				//		{
+				//			templateWorkbook.Write(out1);
+				//			out1.Close();
+				//		}
+				//		//Console.WriteLine("Value of Cell B2: " + wb.GetSheetAt(0).GetRow(1).GetCell(1));
+				//	} 
+				//}
         public static string SavePhoto(List<string> photos, string path)
         {
             try
