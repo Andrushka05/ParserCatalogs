@@ -5649,7 +5649,7 @@ namespace ParserCatalog
 		}
 		private void GetWiterra(IEnumerable<Category> list)
 		{
-			var products = new List<Product>();
+			var products = new List<ProductPrices>();
 			var cook = Helpers.GetCookiePost("http://witerra.ru/", new NameValueCollection());
 			foreach (var catalog in list)
 			{
@@ -5694,7 +5694,7 @@ namespace ParserCatalog
 				{
 					try
 					{
-						var doc2 = Helpers.GetHtmlDocument(res, catalog.Url, Encoding.GetEncoding("windows-1251"), cook);
+                        var doc2 = Helpers.GetHtmlDocument(res, catalog.Url, Encoding.GetEncoding("windows-1251"), cook);
 						var col = "";
 						var size = "";
 						var desc = "";
@@ -5708,10 +5708,12 @@ namespace ParserCatalog
 						}
 						if (string.IsNullOrEmpty(artic))
 							artic = title;
-						var price = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @class, ' '), ' pricePr ')]", 1).Replace("руб.", "").Replace("Базовая цена:", "").Trim();
+                        var price = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @class, ' '), ' pricePr ')]", 1).Replace("руб.", "").Replace("Базовая цена:", "").Replace(",", "").Replace(".", ",").Trim();
 						if (string.IsNullOrEmpty(price))
-							price = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @class, ' '), ' pricePr ')]").Replace("руб.", "").Replace(" ", "").Replace(".", ",").Trim();
-						var desc1 = doc2.DocumentNode.SelectNodes("//td[contains(concat(' ', @class, ' '), ' main ')]/p");
+							price = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @class, ' '), ' pricePr ')]").Replace("руб.", "").Replace("Базовая цена:", "").Replace(" ", "").Replace(",","").Replace(".", ",").Trim();
+                        var price2 = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @class, ' '), ' pricePr ')][1]").Replace("руб.", "").Replace("Роз. цена:", "").Replace(" ", "").Replace(",", "").Replace(".", ",").Trim();
+                        var price3 = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @class, ' '), ' pricePr ')][3]").Replace("руб.", "").Replace("Мин. цена:", "").Replace(" ", "").Replace(",", "").Replace(".", ",").Trim();
+                        var desc1 = doc2.DocumentNode.SelectNodes("//td[contains(concat(' ', @class, ' '), ' main ')]/p");
 						if (desc1 != null)
 						{
 							foreach (var d in desc1)
@@ -5736,7 +5738,7 @@ namespace ParserCatalog
 
 						//cat = HttpUtility.HtmlDecode(catalog.Name);
 						cat = Helpers.GetItemsInnerText(doc2, "//a[contains(concat(' ', @class, ' '), ' headerNavigation ')]", "", new List<string>() { "Главная" }, "/");
-						products.Add(new Product()
+						products.Add(new ProductPrices()
 						{
 							Url = res,
 							Article = artic,
@@ -5746,16 +5748,13 @@ namespace ParserCatalog
 							Price = price,
 							CategoryPath = cat,
 							Size = size,
-							Photos = phs
+							Photos = phs,
+                            Prices = new List<string>(){price2,price3}
 						});
 
 					}
 					catch (Exception ex) { }
 				}
-
-			}
-			Helpers.SaveToFile(products, path.Text + @"\Witerra.xlsx");
-			StatusStrip("Witerra");
 		}
 		private void GetPiniolo(IEnumerable<Category> list)
 		{
