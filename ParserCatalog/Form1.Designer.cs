@@ -39,6 +39,10 @@
             this.timeStripStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.countStripStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.btnCancel = new System.Windows.Forms.Button();
+            this.pathSimaland = new System.Windows.Forms.TextBox();
+            this.label1 = new System.Windows.Forms.Label();
+            this.label3 = new System.Windows.Forms.Label();
+            this.btnOpenSimaLand = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -54,7 +58,7 @@
             // Start
             // 
             this.Start.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.Start.Location = new System.Drawing.Point(78, 173);
+            this.Start.Location = new System.Drawing.Point(78, 219);
             this.Start.Name = "Start";
             this.Start.Size = new System.Drawing.Size(142, 37);
             this.Start.TabIndex = 8;
@@ -103,7 +107,7 @@
             // photoCheck
             // 
             this.photoCheck.AutoSize = true;
-            this.photoCheck.Location = new System.Drawing.Point(28, 114);
+            this.photoCheck.Location = new System.Drawing.Point(28, 104);
             this.photoCheck.Name = "photoCheck";
             this.photoCheck.Size = new System.Drawing.Size(144, 17);
             this.photoCheck.TabIndex = 12;
@@ -135,7 +139,7 @@
             // 
             this.btnCancel.Enabled = false;
             this.btnCancel.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.btnCancel.Location = new System.Drawing.Point(78, 216);
+            this.btnCancel.Location = new System.Drawing.Point(78, 262);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(142, 37);
             this.btnCancel.TabIndex = 8;
@@ -144,11 +148,49 @@
             this.btnCancel.Visible = false;
             this.btnCancel.Click += new System.EventHandler(this.btnCancel_Click);
             // 
+            // pathSimaland
+            // 
+            this.pathSimaland.Location = new System.Drawing.Point(28, 148);
+            this.pathSimaland.Name = "pathSimaland";
+            this.pathSimaland.Size = new System.Drawing.Size(253, 20);
+            this.pathSimaland.TabIndex = 14;
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(25, 127);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(103, 13);
+            this.label1.TabIndex = 15;
+            this.label1.Text = "Файл для Simaland";
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Location = new System.Drawing.Point(61, 189);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(0, 13);
+            this.label3.TabIndex = 16;
+            // 
+            // btnOpenSimaLand
+            // 
+            this.btnOpenSimaLand.Location = new System.Drawing.Point(111, 173);
+            this.btnOpenSimaLand.Name = "btnOpenSimaLand";
+            this.btnOpenSimaLand.Size = new System.Drawing.Size(75, 23);
+            this.btnOpenSimaLand.TabIndex = 0;
+            this.btnOpenSimaLand.Text = "Открыть";
+            this.btnOpenSimaLand.UseVisualStyleBackColor = true;
+            this.btnOpenSimaLand.Click += new System.EventHandler(this.btnOpenSimaLand_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(667, 324);
+            this.Controls.Add(this.label3);
+            this.Controls.Add(this.btnOpenSimaLand);
+            this.Controls.Add(this.label1);
+            this.Controls.Add(this.pathSimaland);
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.photoCheck);
             this.Controls.Add(this.treeView1);
@@ -182,6 +224,10 @@
         private System.Windows.Forms.ToolStripStatusLabel timeStripStatus;
         private System.Windows.Forms.ToolStripStatusLabel countStripStatus;
         private System.Windows.Forms.Button btnCancel;
+        private System.Windows.Forms.TextBox pathSimaland;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.Button btnOpenSimaLand;
     }
 }
 
