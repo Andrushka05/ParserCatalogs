@@ -106,7 +106,7 @@ namespace ParserCatalog
 						else if (shopUrl.Contains("lemming"))
 							query = "//span/a";
 						else if (shopUrl.Contains("piniolo"))
-							query = "//li[contains(concat(' ', @class, ' '), ' item ')]/a";
+							query = "//li[contains(concat(' ', @class, ' '), ' item ')]/a | //div[contains(concat(' ', @class, ' '), 'tree-submenu-column')]/a";
 						else if (shopUrl.Contains("witerra"))
 							query = "//td[contains(concat(' ', @class, ' '), ' boxText ')]/a";
 						else if (shopUrl.Contains("ru.gipnozstyle"))

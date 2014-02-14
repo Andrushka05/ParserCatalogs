@@ -556,7 +556,7 @@ namespace ParserCatalog
             foreach (var catalog in links)
             {
 
-                var products = new List<Product>();
+                var products = new List<Simaland>();
                 var docCat = Helpers.GetHtmlDocument(catalog, "http://www.sima-land.ru/", null, cook);
                 var nameCat = Helpers.GetItemInnerText(docCat, "//ul[contains(concat(' ', @class, ' '), 'breadcrumbs')]/li[last()]/a");
                 var cats = Helpers.GetItemsAttributtList(docCat, "//div[contains(concat(' ', @class, ' '), 'catalog-index-dd')]/ul/li/a", "", "data-qurl", null, null);
@@ -655,13 +655,16 @@ namespace ParserCatalog
                     desc = Helpers.ReplaceWhiteSpace(desc);
                     desc = desc.Replace(";;", "\r\n");
                     cat = Helpers.GetItemsInnerText(doc2, "//ul[contains(concat(' ', @class, ' '), 'breadcrumbs')]/li/a", "", null, "/");
+									
                     if (phs.Any())
                     {
                         var t = new HashSet<string>(phs.Select(x => x.Replace("/400", "/140")));
                         phs = t.Select(x => x.Replace("/140", "/1600")).ToList();
                     }
-
-                    products.Add(new Product()
+									var minCount=Helpers.GetItemInnerText(doc2,"//span[contains(concat(' ', @class, ' '), 'kMin')]");
+									if (string.IsNullOrEmpty(minCount))
+										minCount = Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @class, ' '), 'min-qty')]/span");
+                    products.Add(new Simaland()
                     {
                         Url = res,
                         Article = artic,
@@ -672,7 +675,7 @@ namespace ParserCatalog
                         CategoryPath = cat,
                         Size = size,
                         Photos = phs,
-                        state = desc.ToLower().Contains("нет в наличие") ? "no_sale" : ""
+                        MinCount=minCount
                     });
 
                     countRequest++;
@@ -687,28 +690,40 @@ namespace ParserCatalog
 
         private void GetSimaland(IEnumerable<Category> list)
         {
-            var products = new List<Product>();
+            
             var cook = Helpers.GetCookiePost("http://www.sima-land.ru/suveniry/eksklyuzivnye-tovary/", new NameValueCollection() { { "rowlimit", "500" }, { "url", HttpUtility.UrlEncode("http://www.sima-land.ru/suveniry/eksklyuzivnye-tovary/") } });
             var tt = HttpUtility.UrlDecode(cook);
             tt = tt.Replace("i:0", "i:500");
             cook = HttpUtility.UrlEncode(tt);
             var driver = new FirefoxDriver();
             driver.Navigate().GoToUrl("http://www.sima-land.ru");
+						var first = true;
             foreach (var catalog in list)
             {
+							var products = new List<Simaland>();
                 var docCat = Helpers.GetHtmlDocument(catalog.Url, "http://www.sima-land.ru/", null, cook);
                 var cats = Helpers.GetItemsAttributtList(docCat, "//div[contains(concat(' ', @class, ' '), 'catalog-index-dd')]/ul/li/a", "", "data-qurl", null, null);
                 var prod = new HashSet<string>();
                 if (cats.Any())
                 {
+									if (first)
+									{
+										try
+										{
+											driver.Navigate().GoToUrl(cats[1]);
+											var limit =
+													driver.FindElement(
+															By.XPath("//div[contains(concat(' ', @class, ' '), 'filter-limit')]/select"));
+											var selectElement = new SelectElement(limit);
+											selectElement.SelectByValue("500");
+										}
+										catch (Exception ex) { }
+										Thread.Sleep(500);
+										cook = string.Join("; ", driver.Manage().Cookies.AllCookies.Select(x => x.Name + "=" + x.Value));
+										driver.Close();
+										first = false;
+									}
                     var temp = new List<string>();
-                    driver.Navigate().GoToUrl(cats[1]);
-                    var limit = driver.FindElement(By.XPath("//div[contains(concat(' ', @class, ' '), 'filter-limit')]/select"));
-                    var selectElement = new SelectElement(limit);
-                    selectElement.SelectByValue("500");
-                    Thread.Sleep(500);
-                    cook = string.Join("; ", driver.Manage().Cookies.AllCookies.Select(x => x.Name + "=" + x.Value));
-                    driver.Close();
                     foreach (var cat in cats)
                     {
                         var tr = Helpers.GetProductLinks2(cat, cook, catalog.Url,
@@ -726,9 +741,9 @@ namespace ParserCatalog
                 {
                     //try
                     //{
-                    if (countRequest % 6 == 0)
+                    if (countRequest % 7 == 0)
                     {
-                        Thread.Sleep(7000);
+                        Thread.Sleep(6000);
                     }
                     var doc2 = Helpers.GetHtmlDocument(res, catalog.Url, null, cook);
                     if (doc2 == null)
@@ -758,27 +773,31 @@ namespace ParserCatalog
                         phs = t.Select(x => x.Replace("/140", "/1600")).ToList();
                     }
 
-                    products.Add(new Product()
-                    {
-                        Url = res,
-                        Article = artic,
-                        Color = col,
-                        Description = desc,
-                        Name = title,
-                        Price = price,
-                        CategoryPath = cat,
-                        Size = size,
-                        Photos = phs,
-                        state = desc.ToLower().Contains("нет в наличие") ? "no_sale" : ""
-                    });
+										var minCount = Helpers.GetItemInnerText(doc2, "//span[contains(concat(' ', @class, ' '), 'kMin')]");
+									if(string.IsNullOrEmpty(minCount))
+										minCount=Helpers.GetItemInnerText(doc2, "//div[contains(concat(' ', @class, ' '), 'min-qty')]/span");
+										products.Add(new Simaland()
+										{
+											Url = res,
+											Article = artic,
+											Color = col,
+											Description = desc,
+											Name = title,
+											Price = price,
+											CategoryPath = cat,
+											Size = size,
+											Photos = phs,
+											MinCount = minCount
+										});
 
                     countRequest++;
                     //}
                     //catch (Exception ex) { }
+										
                 }
-
+								Helpers.SaveToFile(products, path.Text + @"\Simaland-"+Helpers.GetEncodingCategory(catalog.Name)+".xlsx");
             }
-            Helpers.SaveToFile(products, path.Text + @"\Simaland.xlsx");
+            
             StatusStrip("Simaland");
         }
 
