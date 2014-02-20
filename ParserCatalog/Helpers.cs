@@ -355,9 +355,13 @@ namespace ParserCatalog
             {
 
                 var client = new System.Net.WebClient();
+							if(cook.Length!=0)
                 client.Headers.Add(HttpRequestHeader.Cookie, cook);
                 client.Headers.Add(HttpRequestHeader.Accept, "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
+							if(!url.Contains("tvoe.ru"))
                 client.Headers.Add(HttpRequestHeader.Referer, HttpUtility.UrlEncode(refererLink));
+							else
+								client.Headers.Add(HttpRequestHeader.Referer, refererLink);
                 client.Headers.Add(HttpRequestHeader.UserAgent, "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36");
                 client.Headers.Add(HttpRequestHeader.AcceptLanguage, "ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4");
                 var data = client.OpenRead(url);
