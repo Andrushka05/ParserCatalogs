@@ -851,7 +851,10 @@ namespace ParserCatalog
                         size = string.Join("; ", siz.Select(x => x.Contains("-") ? x.Remove(x.IndexOf("-")).Trim() : x));
                     }
                     if (desc.Length > 0 && desc.Contains("Оптовикам по заказу"))
-                        desc = desc.Remove(desc.IndexOf("Оптовикам по заказу")).Trim();
+                    {
+                        desc = desc.Replace("Оптовикам по заказу от 50.000 т.р. для упрощения работы, высылаем наличие товара на складе (обращаться по тел.: +7 4932 591196)", "").Trim();
+                        desc = Helpers.ReplaceWhiteSpace(desc);
+                    }
                     if (string.IsNullOrEmpty(artic))
                         artic = title;
                     phs = Helpers.GetPhoto(doc2, "//a[contains(concat(' ', @id, ' '), 'zoom')]", "//div[contains(concat(' ', @class, ' '), 'prod_preview')]/ul/li/em/img");
