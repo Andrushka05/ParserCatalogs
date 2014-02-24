@@ -6878,7 +6878,7 @@ namespace ParserCatalog
                 {
                     foreach (var p in a)
                     {
-                        prLink.Add("http://artvision-opt.ru" + WebUtility.HtmlDecode(p.Attributes["href"].Value));
+                        prLink.Add(WebUtility.HtmlDecode(p.Attributes["href"].Value));
                     }
 
                     var pages = doc.DocumentNode.SelectNodes("//a[contains(concat(' ', @class, ' '), '  b-pager__link  ')]");
@@ -6898,7 +6898,7 @@ namespace ParserCatalog
                             {
                                 foreach (var p in a2)
                                 {
-                                    prLink.Add("http://artvision-opt.ru" + WebUtility.HtmlDecode(p.Attributes["href"].Value));
+                                    prLink.Add(WebUtility.HtmlDecode(p.Attributes["href"].Value));
                                 }
                             }
                         }
